@@ -1,0 +1,1235 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Codex Font Remixer</title>
+    <style>
+      :root {
+        --text: #333;
+        --muted: #999;
+        --border: #e5e5e5;
+        --primary: #18a0fb;
+        --error: #f24822;
+        --success: #1bc47d;
+        --bg: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-size: 11px;
+      }
+
+      .app {
+        padding: 12px 12px 92px;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .section {
+        margin-bottom: 12px;
+      }
+
+      .label {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--muted);
+      }
+
+      input[type="text"],
+      input[type="number"],
+      select,
+      textarea,
+      button {
+        width: 100%;
+        font: inherit;
+      }
+
+      input[type="text"],
+      input[type="number"],
+      select,
+      textarea {
+        padding: 6px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: #fff;
+        color: var(--text);
+      }
+
+      textarea {
+        resize: vertical;
+      }
+
+      button {
+        border: 1px solid var(--border);
+        background: #fff;
+        color: var(--text);
+        border-radius: 6px;
+        padding: 6px;
+        cursor: pointer;
+      }
+
+      button.primary {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: #fff;
+        font-weight: 600;
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+
+      .field-with-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .field-with-label span {
+        min-width: 58px;
+        color: var(--muted);
+      }
+
+      .field-with-label input {
+        width: 100%;
+      }
+
+      .preset-picker-row {
+        display: grid;
+        grid-template-columns: 1fr 32px;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .icon-button {
+        width: 32px;
+        min-width: 32px;
+        height: 32px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .icon-button svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .icon-button.active {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: #f7faff;
+      }
+
+      .row-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 6px;
+      }
+
+      .inline {
+        margin-top: 6px;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .font-results {
+        margin-top: 4px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        max-height: 150px;
+        overflow: auto;
+        background: #fff;
+      }
+
+      .font-item {
+        width: 100%;
+        text-align: left;
+        border: 0;
+        border-bottom: 1px solid #f2f2f2;
+        border-radius: 0;
+        background: #fff;
+        padding: 6px;
+      }
+
+      .font-item:last-child {
+        border-bottom: 0;
+      }
+
+      .font-item:hover {
+        background: #f7faff;
+      }
+
+      .slider-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .switch {
+        position: relative;
+        width: 32px;
+        height: 18px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .switch-track {
+        position: absolute;
+        inset: 0;
+        border-radius: 99px;
+        background: #d8d8d8;
+        transition: background 0.15s ease;
+      }
+
+      .switch-track::before {
+        content: "";
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        top: 2px;
+        left: 2px;
+        border-radius: 50%;
+        background: #fff;
+        transition: transform 0.15s ease;
+      }
+
+      .switch input:checked + .switch-track {
+        background: var(--primary);
+      }
+
+      .switch input:checked + .switch-track::before {
+        transform: translateX(14px);
+      }
+
+      .segmented {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+      }
+
+      .segmented button.active {
+        border-color: var(--primary);
+        color: var(--primary);
+        font-weight: 600;
+      }
+
+      #status {
+        min-height: 16px;
+        color: var(--muted);
+        line-height: 1.35;
+      }
+
+      #status.error {
+        color: var(--error);
+      }
+
+      #status.success {
+        color: var(--success);
+      }
+
+      .footer-bar {
+        position: sticky;
+        bottom: 0;
+        margin: 0 -12px -12px;
+        padding: 10px 12px 12px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.94) 14px, #fff 30px);
+        border-top: 1px solid #f2f2f2;
+      }
+
+      .footer-bar button {
+        display: block;
+      }
+
+      .hint {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.35;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <h1>Codex Font Remixer</h1>
+
+      <section class="section">
+        <label class="label" for="presetSelect">Presets</label>
+        <div class="preset-picker-row">
+          <select id="presetSelect"></select>
+          <button id="choosePresetFolderButton" type="button" class="icon-button" title="Reload saved presets">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="8"></circle>
+              <circle cx="12" cy="12" r="2.25"></circle>
+            </svg>
+          </button>
+        </div>
+        <div id="presetFolderStatus" class="hint">Checking preset storage...</div>
+        <div class="row inline">
+          <button id="loadPresetButton" type="button">Load</button>
+          <button id="savePresetButton" type="button">Save</button>
+        </div>
+        <div id="savePresetInline" class="inline hidden">
+          <div class="row">
+            <input id="savePresetName" type="text" placeholder="Preset name" />
+            <div class="row">
+              <button id="savePresetConfirm" type="button">OK</button>
+              <button id="savePresetCancel" type="button">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div id="presetActions" class="row-3 inline hidden">
+          <button id="renamePresetButton" type="button">Rename</button>
+          <button id="overwritePresetButton" type="button">Overwrite</button>
+          <button id="deletePresetButton" type="button">Delete</button>
+        </div>
+        <div id="renamePresetInline" class="inline hidden">
+          <div class="row">
+            <input id="renamePresetName" type="text" placeholder="New preset name" />
+            <div class="row">
+              <button id="renamePresetConfirm" type="button">OK</button>
+              <button id="renamePresetCancel" type="button">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <label class="label" for="fontASearch">Latin Font</label>
+        <input id="fontASearch" type="text" placeholder="Search font family" />
+        <div id="fontAResults" class="font-results hidden"></div>
+        <select id="fontAStyle" class="inline"></select>
+      </section>
+
+      <section class="section">
+        <label class="label" for="fontBSearch">Japanese Font</label>
+        <input id="fontBSearch" type="text" placeholder="Search font family" />
+        <div id="fontBResults" class="font-results hidden"></div>
+        <select id="fontBStyle" class="inline"></select>
+      </section>
+
+      <section class="section">
+        <label class="label" for="fontSize">Font Size</label>
+        <input id="fontSize" type="number" value="16" min="1" step="1" />
+      </section>
+
+      <section class="section">
+        <label class="label" for="sizeRatio">Size Ratio</label>
+        <div class="slider-row">
+          <input id="sizeRatio" type="range" min="-30" max="30" value="0" />
+          <span id="sizeRatioValue">0%</span>
+        </div>
+      </section>
+
+      <section class="section">
+        <label class="label">Letter Spacing (px)</label>
+        <div class="row">
+          <label class="field-with-label">
+            <span>Latin</span>
+            <input id="spacingLatin" type="number" step="0.1" value="0" />
+          </label>
+          <label class="field-with-label">
+            <span>Kanji</span>
+            <input id="spacingKanji" type="number" step="0.1" value="0" />
+          </label>
+        </div>
+        <div class="row inline">
+          <label class="field-with-label">
+            <span>Hiragana</span>
+            <input id="spacingHiragana" type="number" step="0.1" value="0" />
+          </label>
+          <label class="field-with-label">
+            <span>Katakana</span>
+            <input id="spacingKatakana" type="number" step="0.1" value="0" />
+          </label>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="toggle-row">
+          <span class="label" style="margin: 0">Optical Spacing</span>
+          <label class="switch">
+            <input id="opticalSpacing" type="checkbox" />
+            <span class="switch-track"></span>
+          </label>
+        </div>
+        <div id="opticalIntensityWrap" class="slider-row hidden inline">
+          <input id="opticalIntensity" type="range" min="0" max="100" value="100" />
+          <span id="opticalIntensityValue">100</span>
+        </div>
+      </section>
+
+      <section class="section">
+        <label class="label">Mode</label>
+        <div class="segmented">
+          <button id="modeSelection" type="button" class="active">Apply to Selection</button>
+          <button id="modeCreate" type="button">Create New</button>
+        </div>
+        <textarea
+          id="createText"
+          class="inline hidden"
+          rows="3"
+          placeholder="Enter text for new node"
+        ></textarea>
+      </section>
+
+      <div class="footer-bar">
+        <div id="status"></div>
+        <button id="applyButton" type="button" class="primary">Apply</button>
+      </div>
+    </div>
+
+    <script>
+      const LOCAL_PRESETS_KEY = "codex-font-remixer.presets";
+      const LOCAL_SETTINGS_KEY = "codex-font-remixer.settings";
+      const DEVICE_DB_NAME = "codex-font-remixer";
+      const DEVICE_DB_STORE = "storage";
+      const DEVICE_STORAGE_PROBE_KEY = "__codex-font-remixer-probe__";
+
+      const state = {
+        fonts: [],
+        presets: [],
+        selectedPresetId: "",
+        mode: "selection",
+        fontA: { family: "", style: "Regular" },
+        fontB: { family: "", style: "Regular" },
+        presetPersistence: "unknown"
+      };
+
+      function el(id) {
+        return document.getElementById(id);
+      }
+
+      function post(message) {
+        parent.postMessage({ pluginMessage: message }, "*");
+      }
+
+      function setStatus(message, kind) {
+        const status = el("status");
+        status.textContent = message || "";
+        status.className = kind ? kind : "";
+      }
+
+      function toNumber(value, fallback) {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : fallback;
+      }
+
+      function createPresetId() {
+        return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      }
+
+      function normalizePresetRecord(value) {
+        if (!value || typeof value !== "object") {
+          return null;
+        }
+        if (typeof value.id !== "string" || typeof value.name !== "string") {
+          return null;
+        }
+        return {
+          id: value.id,
+          name: value.name,
+          settings: value.settings && typeof value.settings === "object" ? value.settings : {}
+        };
+      }
+
+      function supportsLocalStorageFallback() {
+        try {
+          const probe = "__codex_font_remixer_probe__";
+          window.localStorage.setItem(probe, "1");
+          window.localStorage.removeItem(probe);
+          return true;
+        } catch (error) {
+          return false;
+        }
+      }
+
+      function supportsIndexedDbStorage() {
+        return typeof indexedDB !== "undefined";
+      }
+
+      function supportsDeviceStorage() {
+        return supportsIndexedDbStorage() || supportsLocalStorageFallback();
+      }
+
+      function openDeviceDb() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(DEVICE_DB_NAME, 1);
+          request.onerror = () => reject(request.error);
+          request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(DEVICE_DB_STORE)) {
+              db.createObjectStore(DEVICE_DB_STORE);
+            }
+          };
+          request.onsuccess = () => resolve(request.result);
+        });
+      }
+
+      async function readLocalStorageJson(key) {
+        if (!supportsLocalStorageFallback()) {
+          return null;
+        }
+
+        try {
+          const raw = window.localStorage.getItem(key);
+          return raw ? JSON.parse(raw) : null;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      async function writeLocalStorageJson(key, value) {
+        if (!supportsLocalStorageFallback()) {
+          return false;
+        }
+
+        try {
+          window.localStorage.setItem(key, JSON.stringify(value));
+          return true;
+        } catch (error) {
+          return false;
+        }
+      }
+
+      async function readDeviceJson(key) {
+        if (supportsIndexedDbStorage()) {
+          try {
+            const db = await openDeviceDb();
+            const result = await new Promise((resolve, reject) => {
+              const transaction = db.transaction(DEVICE_DB_STORE, "readonly");
+              const store = transaction.objectStore(DEVICE_DB_STORE);
+              const request = store.get(key);
+              request.onerror = () => reject(request.error);
+              request.onsuccess = () => resolve(request.result ?? null);
+              transaction.oncomplete = () => db.close();
+            });
+            return result;
+          } catch (error) {
+          }
+        }
+
+        return await readLocalStorageJson(key);
+      }
+
+      async function writeDeviceJson(key, value) {
+        if (supportsIndexedDbStorage()) {
+          try {
+            const db = await openDeviceDb();
+            await new Promise((resolve, reject) => {
+              const transaction = db.transaction(DEVICE_DB_STORE, "readwrite");
+              const store = transaction.objectStore(DEVICE_DB_STORE);
+              const request = store.put(value, key);
+              request.onerror = () => reject(request.error);
+              transaction.oncomplete = () => {
+                db.close();
+                resolve();
+              };
+              transaction.onerror = () => reject(transaction.error);
+            });
+            return true;
+          } catch (error) {
+          }
+        }
+
+        return await writeLocalStorageJson(key, value);
+      }
+
+      async function probeDeviceStorage() {
+        const probeValue = { ok: true, at: Date.now() };
+        const wrote = await writeDeviceJson(DEVICE_STORAGE_PROBE_KEY, probeValue);
+        if (!wrote) {
+          return false;
+        }
+
+        const loaded = await readDeviceJson(DEVICE_STORAGE_PROBE_KEY);
+        return Boolean(loaded && loaded.ok === true);
+      }
+
+      async function loadLocalPresets() {
+        const parsed = await readDeviceJson(LOCAL_PRESETS_KEY);
+        if (!Array.isArray(parsed)) {
+          return [];
+        }
+        return parsed.map(normalizePresetRecord).filter(Boolean);
+      }
+
+      async function saveLocalPresets() {
+        return await writeDeviceJson(LOCAL_PRESETS_KEY, state.presets);
+      }
+
+      async function loadLocalSettings() {
+        const parsed = await readDeviceJson(LOCAL_SETTINGS_KEY);
+        return parsed && typeof parsed === "object" ? parsed : null;
+      }
+
+      async function saveLocalSettings(settings) {
+        return await writeDeviceJson(LOCAL_SETTINGS_KEY, settings);
+      }
+
+      async function reloadDevicePresets(showStatus) {
+        state.presets = await loadLocalPresets();
+        renderPresetSelect();
+        updatePresetFolderUi();
+
+        if (showStatus) {
+          setStatus(
+            state.presets.length
+              ? `Reloaded ${state.presets.length} preset${state.presets.length === 1 ? "" : "s"} from this device.`
+              : "No saved device presets found.",
+            ""
+          );
+        }
+      }
+
+      function setPresetPersistence(mode) {
+        state.presetPersistence = mode;
+        updatePresetFolderUi();
+      }
+
+      function updatePresetFolderUi() {
+        const button = el("choosePresetFolderButton");
+        const status = el("presetFolderStatus");
+        const isDevice = state.presetPersistence === "device";
+        const isSession = state.presetPersistence === "session";
+
+        button.disabled = false;
+        button.classList.toggle("active", isDevice);
+
+        if (isDevice) {
+          status.textContent = "Saved on this device";
+          return;
+        }
+
+        if (isSession) {
+          status.textContent = "Saved for this session only";
+          return;
+        }
+
+        status.textContent = "Checking preset storage...";
+      }
+
+      function setMode(mode) {
+        state.mode = mode;
+        el("modeSelection").classList.toggle("active", mode === "selection");
+        el("modeCreate").classList.toggle("active", mode === "create");
+        el("createText").classList.toggle("hidden", mode !== "create");
+      }
+
+      function updateRatioLabels() {
+        el("sizeRatioValue").textContent = `${el("sizeRatio").value}%`;
+        el("opticalIntensityValue").textContent = el("opticalIntensity").value;
+      }
+
+      function setupToggleVisibility() {
+        const enabled = el("opticalSpacing").checked;
+        el("opticalIntensityWrap").classList.toggle("hidden", !enabled);
+      }
+
+      function renderPresetSelect() {
+        const select = el("presetSelect");
+        select.innerHTML = "";
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = state.presets.length ? "Select a preset" : "No presets";
+        select.appendChild(placeholder);
+
+        state.presets.forEach((preset) => {
+          const option = document.createElement("option");
+          option.value = preset.id;
+          option.textContent = preset.name;
+          select.appendChild(option);
+        });
+
+        if (state.selectedPresetId && state.presets.some((preset) => preset.id === state.selectedPresetId)) {
+          select.value = state.selectedPresetId;
+        } else {
+          state.selectedPresetId = "";
+          select.value = "";
+        }
+
+        el("presetActions").classList.toggle("hidden", !state.selectedPresetId);
+      }
+
+      function getPresetById(id) {
+        return state.presets.find((preset) => preset.id === id) || null;
+      }
+
+      function collectSettings() {
+        return {
+          fontA: {
+            family: state.fontA.family,
+            style: state.fontA.style || "Regular"
+          },
+          fontB: {
+            family: state.fontB.family,
+            style: state.fontB.style || "Regular"
+          },
+          fontSize: toNumber(el("fontSize").value, 16),
+          sizeRatio: toNumber(el("sizeRatio").value, 0),
+          letterSpacingLatin: toNumber(el("spacingLatin").value, 0),
+          letterSpacingKanji: toNumber(el("spacingKanji").value, 0),
+          letterSpacingHiragana: toNumber(el("spacingHiragana").value, 0),
+          letterSpacingKatakana: toNumber(el("spacingKatakana").value, 0),
+          opticalSpacing: el("opticalSpacing").checked,
+          opticalIntensity: toNumber(el("opticalIntensity").value, 100)
+        };
+      }
+
+      function applySettingsToForm(settings) {
+        if (!settings) {
+          return;
+        }
+
+        if (settings.fontA != null) {
+          fontPickerA.setValue(settings.fontA);
+        }
+        if (settings.fontB != null) {
+          fontPickerB.setValue(settings.fontB);
+        }
+        if (settings.fontSize != null) {
+          el("fontSize").value = String(settings.fontSize);
+        }
+        if (settings.sizeRatio != null) {
+          el("sizeRatio").value = String(settings.sizeRatio);
+        }
+        if (settings.letterSpacingLatin != null) {
+          el("spacingLatin").value = String(settings.letterSpacingLatin);
+        }
+        if (settings.letterSpacingKanji != null) {
+          el("spacingKanji").value = String(settings.letterSpacingKanji);
+        }
+        if (settings.letterSpacingHiragana != null) {
+          el("spacingHiragana").value = String(settings.letterSpacingHiragana);
+        }
+        if (settings.letterSpacingKatakana != null) {
+          el("spacingKatakana").value = String(settings.letterSpacingKatakana);
+        }
+        if (settings.opticalSpacing != null) {
+          el("opticalSpacing").checked = Boolean(settings.opticalSpacing);
+        }
+        if (settings.opticalIntensity != null) {
+          el("opticalIntensity").value = String(settings.opticalIntensity);
+        }
+
+        updateRatioLabels();
+        setupToggleVisibility();
+      }
+
+      function showInlineEditor(rootId, inputId, initialValue, onConfirm) {
+        const root = el(rootId);
+        const input = el(inputId);
+        root.classList.remove("hidden");
+        input.value = initialValue || "";
+        input.focus();
+        input.select();
+
+        const confirmButton = root.querySelector("button[id$='Confirm']");
+        const cancelButton = root.querySelector("button[id$='Cancel']");
+
+        let isClosed = false;
+
+        const cleanup = () => {
+          input.removeEventListener("keydown", onKey);
+          confirmButton.removeEventListener("click", onConfirmClick);
+          cancelButton.removeEventListener("click", onCancelClick);
+        };
+
+        const close = () => {
+          if (isClosed) {
+            return;
+          }
+          isClosed = true;
+          cleanup();
+          root.classList.add("hidden");
+        };
+
+        const confirm = () => {
+          const value = input.value.trim();
+          close();
+          onConfirm(value);
+        };
+
+        const cancel = () => {
+          close();
+        };
+
+        const onKey = (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            confirm();
+          }
+          if (event.key === "Escape") {
+            event.preventDefault();
+            cancel();
+          }
+        };
+
+        const onConfirmClick = () => {
+          confirm();
+        };
+
+        const onCancelClick = () => {
+          cancel();
+        };
+
+        input.addEventListener("keydown", onKey);
+        confirmButton.addEventListener("click", onConfirmClick, { once: true });
+        cancelButton.addEventListener("click", onCancelClick, { once: true });
+      }
+
+      function createFontPicker(searchId, resultsId, styleId, onChange) {
+        const searchInput = el(searchId);
+        const results = el(resultsId);
+        const styleSelect = el(styleId);
+        let debounceHandle = null;
+        let selectedFamily = "";
+
+        function findFamily(name) {
+          return state.fonts.find((font) => font.family === name) || null;
+        }
+
+        function chooseStyle(styles, preferredStyle) {
+          if (!styles.length) {
+            return "Regular";
+          }
+          if (preferredStyle && styles.includes(preferredStyle)) {
+            return preferredStyle;
+          }
+          if (styles.includes("Regular")) {
+            return "Regular";
+          }
+          return styles[0];
+        }
+
+        function renderStyles(family, preferredStyle) {
+          const record = findFamily(family);
+          const styles = record ? record.styles : [];
+          styleSelect.innerHTML = "";
+
+          styles.forEach((style) => {
+            const option = document.createElement("option");
+            option.value = style;
+            option.textContent = style;
+            styleSelect.appendChild(option);
+          });
+
+          const chosen = chooseStyle(styles, preferredStyle);
+          if (styles.length) {
+            styleSelect.value = chosen;
+          }
+          return chosen;
+        }
+
+        function renderResults(items) {
+          results.innerHTML = "";
+          if (!items.length) {
+            results.classList.add("hidden");
+            return;
+          }
+
+          items.slice(0, 100).forEach((item) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "font-item";
+            button.dataset.family = item.family;
+            button.textContent = item.family;
+            results.appendChild(button);
+          });
+
+          results.classList.remove("hidden");
+        }
+
+        function applyFamilySelection(family, preferredStyle) {
+          selectedFamily = family;
+          searchInput.value = family;
+          const selectedStyle = renderStyles(family, preferredStyle);
+          onChange({ family, style: selectedStyle || "Regular" });
+          results.classList.add("hidden");
+        }
+
+        function filterAndRender(query) {
+          if (!state.fonts.length) {
+            return;
+          }
+          const normalized = query.trim().toLowerCase();
+          const list = normalized
+            ? state.fonts.filter((font) => font.family.toLowerCase().includes(normalized))
+            : state.fonts;
+          renderResults(list);
+        }
+
+        searchInput.addEventListener("focus", () => {
+          if (!state.fonts.length) {
+            return;
+          }
+          renderResults(state.fonts);
+        });
+
+        searchInput.addEventListener("input", () => {
+          if (!state.fonts.length) {
+            return;
+          }
+          if (debounceHandle) {
+            clearTimeout(debounceHandle);
+          }
+          debounceHandle = setTimeout(() => {
+            filterAndRender(searchInput.value);
+          }, 150);
+        });
+
+        searchInput.addEventListener("blur", () => {
+          setTimeout(() => {
+            results.classList.add("hidden");
+          }, 150);
+        });
+
+        results.addEventListener("mousedown", (event) => {
+          const item = event.target.closest(".font-item");
+          if (!item) {
+            return;
+          }
+          event.preventDefault();
+          const family = item.dataset.family;
+          if (!family) {
+            return;
+          }
+          applyFamilySelection(family);
+        });
+
+        styleSelect.addEventListener("change", () => {
+          if (!selectedFamily) {
+            return;
+          }
+          onChange({ family: selectedFamily, style: styleSelect.value || "Regular" });
+        });
+
+        return {
+          setValue(font) {
+            const family = font && typeof font.family === "string" ? font.family : "";
+            if (!family) {
+              return;
+            }
+            applyFamilySelection(family, font.style);
+          },
+          setDefault() {
+            if (!state.fonts.length) {
+              return;
+            }
+            applyFamilySelection(state.fonts[0].family, "Regular");
+          }
+        };
+      }
+
+      function bindPresetControls() {
+        el("presetSelect").addEventListener("change", (event) => {
+          state.selectedPresetId = event.target.value;
+          el("presetActions").classList.toggle("hidden", !state.selectedPresetId);
+        });
+
+        el("choosePresetFolderButton").addEventListener("click", async () => {
+          if (state.presetPersistence === "device") {
+            await reloadDevicePresets(true);
+            return;
+          }
+          setStatus("This runtime is using session-only presets right now.", "");
+        });
+
+        el("loadPresetButton").addEventListener("click", () => {
+          if (!state.selectedPresetId) {
+            setStatus("Select a preset first.", "error");
+            return;
+          }
+          const preset = getPresetById(state.selectedPresetId);
+          if (!preset) {
+            setStatus("Preset not found.", "error");
+            return;
+          }
+          applySettingsToForm(preset.settings);
+          setStatus(`Loaded preset "${preset.name}".`, "");
+        });
+
+        el("savePresetButton").addEventListener("click", () => {
+          showInlineEditor("savePresetInline", "savePresetName", "", async (name) => {
+            if (!name) {
+              setStatus("Preset name is required.", "error");
+              return;
+            }
+
+            if (state.presetPersistence === "session") {
+              post({ type: "save-preset", name, settings: collectSettings() });
+              setStatus(`Preset "${name}" saved for this session only.`, "");
+              return;
+            }
+
+            state.presets.push({
+              id: createPresetId(),
+              name,
+              settings: collectSettings()
+            });
+
+            if (!(await saveLocalPresets())) {
+              state.presets.pop();
+              setPresetPersistence("session");
+              post({ type: "save-preset", name, settings: collectSettings() });
+              setStatus(`Could not save on this device. Preset "${name}" was saved for this session only.`, "");
+              return;
+            }
+
+            state.selectedPresetId = state.presets[state.presets.length - 1].id;
+            renderPresetSelect();
+            setStatus(`Preset "${name}" saved on this device.`, "success");
+          });
+        });
+
+        el("renamePresetButton").addEventListener("click", () => {
+          if (!state.selectedPresetId) {
+            setStatus("Select a preset first.", "error");
+            return;
+          }
+          const preset = getPresetById(state.selectedPresetId);
+          const currentName = preset ? preset.name : "";
+          showInlineEditor("renamePresetInline", "renamePresetName", currentName, async (newName) => {
+            if (!newName) {
+              setStatus("Preset name is required.", "error");
+              return;
+            }
+            if (!preset) {
+              setStatus("Preset not found.", "error");
+              return;
+            }
+
+            if (state.presetPersistence === "session") {
+              post({ type: "update-preset", id: state.selectedPresetId, name: newName });
+              setStatus(`Preset "${newName}" renamed for this session only.`, "");
+              return;
+            }
+
+            const previousName = preset.name;
+            preset.name = newName;
+            if (!(await saveLocalPresets())) {
+              preset.name = previousName;
+              setPresetPersistence("session");
+              post({ type: "update-preset", id: state.selectedPresetId, name: newName });
+              setStatus(`Could not rename on this device. Preset "${newName}" was updated for this session only.`, "");
+              return;
+            }
+            renderPresetSelect();
+            setStatus(`Preset "${newName}" renamed on this device.`, "success");
+          });
+        });
+
+        el("overwritePresetButton").addEventListener("click", async () => {
+          if (!state.selectedPresetId) {
+            setStatus("Select a preset first.", "error");
+            return;
+          }
+          const preset = getPresetById(state.selectedPresetId);
+          if (!preset) {
+            setStatus("Preset not found.", "error");
+            return;
+          }
+
+          if (state.presetPersistence === "session") {
+            post({ type: "update-preset", id: state.selectedPresetId, settings: collectSettings() });
+            setStatus(`Preset "${preset.name}" overwritten for this session only.`, "");
+            return;
+          }
+
+          const previousSettings = preset.settings;
+          preset.settings = collectSettings();
+          if (!(await saveLocalPresets())) {
+            preset.settings = previousSettings;
+            setPresetPersistence("session");
+            post({ type: "update-preset", id: state.selectedPresetId, settings: collectSettings() });
+            setStatus(`Could not update on this device. Preset "${preset.name}" was overwritten for this session only.`, "");
+            return;
+          }
+          setStatus(`Preset "${preset.name}" overwritten on this device.`, "success");
+        });
+
+        el("deletePresetButton").addEventListener("click", async () => {
+          if (!state.selectedPresetId) {
+            setStatus("Select a preset first.", "error");
+            return;
+          }
+
+          if (state.presetPersistence === "session") {
+            post({ type: "delete-preset", id: state.selectedPresetId });
+            state.selectedPresetId = "";
+            renderPresetSelect();
+            setStatus("Preset deleted for this session only.", "");
+            return;
+          }
+
+          const next = state.presets.filter((preset) => preset.id !== state.selectedPresetId);
+          if (next.length === state.presets.length) {
+            setStatus("Preset not found.", "error");
+            return;
+          }
+          const previousPresets = state.presets.slice();
+          state.presets = next;
+          if (!(await saveLocalPresets())) {
+            state.presets = previousPresets;
+            setPresetPersistence("session");
+            post({ type: "delete-preset", id: state.selectedPresetId });
+            state.selectedPresetId = "";
+            renderPresetSelect();
+            setStatus("Could not delete from device storage. Preset was deleted for this session only.", "");
+            return;
+          }
+          state.selectedPresetId = "";
+          renderPresetSelect();
+          setStatus("Preset deleted from this device.", "success");
+        });
+      }
+
+      function bindGeneralControls() {
+        el("modeSelection").addEventListener("click", () => setMode("selection"));
+        el("modeCreate").addEventListener("click", () => setMode("create"));
+
+        el("sizeRatio").addEventListener("input", updateRatioLabels);
+        el("opticalIntensity").addEventListener("input", updateRatioLabels);
+        el("opticalSpacing").addEventListener("change", setupToggleVisibility);
+
+        el("applyButton").addEventListener("click", () => {
+          if (!state.fontA.family || !state.fontB.family) {
+            setStatus("Please select both Latin and Japanese fonts.", "error");
+            return;
+          }
+
+          void saveLocalSettings(collectSettings());
+
+          post({
+            type: "apply",
+            mode: state.mode,
+            text: el("createText").value,
+            settings: collectSettings()
+          });
+          setStatus("Applying...", "");
+        });
+      }
+
+      const fontPickerA = createFontPicker("fontASearch", "fontAResults", "fontAStyle", (font) => {
+        state.fontA = font;
+      });
+      const fontPickerB = createFontPicker("fontBSearch", "fontBResults", "fontBStyle", (font) => {
+        state.fontB = font;
+      });
+
+      bindPresetControls();
+      bindGeneralControls();
+      updateRatioLabels();
+      setupToggleVisibility();
+      updatePresetFolderUi();
+
+      window.onmessage = async (event) => {
+        const message = event.data.pluginMessage;
+        if (!message || !message.type) {
+          return;
+        }
+
+        if (message.type === "init") {
+          state.fonts = Array.isArray(message.fonts) ? message.fonts : [];
+          const canPersistOnDevice = await probeDeviceStorage();
+          setPresetPersistence(canPersistOnDevice ? "device" : "session");
+
+          const localPresets = canPersistOnDevice ? await loadLocalPresets() : [];
+          const backendPresets = Array.isArray(message.presets) ? message.presets : [];
+          if (localPresets.length) {
+            state.presets = localPresets;
+          } else {
+            state.presets = backendPresets;
+            if (canPersistOnDevice && state.presets.length) {
+              void saveLocalPresets();
+            }
+          }
+          renderPresetSelect();
+
+          if (state.fonts.length) {
+            fontPickerA.setDefault();
+            fontPickerB.setDefault();
+          }
+
+          if (message.savedSettings) {
+            applySettingsToForm(message.savedSettings);
+          } else {
+            const localSettings = canPersistOnDevice ? await loadLocalSettings() : null;
+            if (localSettings) {
+              applySettingsToForm(localSettings);
+            }
+          }
+
+          if (message.selectionInfo && message.selectionInfo.message) {
+            setStatus(message.selectionInfo.message, "");
+          }
+          return;
+        }
+
+        if (message.type === "presets") {
+          if (state.presetPersistence === "session") {
+            state.presets = Array.isArray(message.presets) ? message.presets : [];
+            renderPresetSelect();
+            return;
+          }
+
+          if (!state.presets.length && Array.isArray(message.presets) && message.presets.length) {
+            state.presets = message.presets;
+            void saveLocalPresets();
+            renderPresetSelect();
+          }
+          return;
+        }
+
+        if (message.type === "selection-info") {
+          if (message.message) {
+            setStatus(message.message, "");
+          }
+          return;
+        }
+
+        if (message.type === "status") {
+          setStatus(message.message || "", message.kind || "");
+        }
+      };
+
+      post({ type: "init" });
+    </script>
+  </body>
+</html>
