@@ -6,13 +6,19 @@
     <title>Codex Font Remixer</title>
     <style>
       :root {
-        --text: #333;
-        --muted: #999;
-        --border: #e5e5e5;
-        --primary: #18a0fb;
+        --text: #ffffff;
+        --muted: #b7b7b7;
+        --border: transparent;
+        --primary: #96aae6;
+        --apply-bg: #ff4506;
+        --apply-text: #121212;
         --error: #f24822;
         --success: #1bc47d;
-        --bg: #ffffff;
+        --bg: #272727;
+        --field-bg: #313131;
+        --footer-bg: #272727;
+        --divider: #4a4a4a;
+        --slider-track: #5b5b5b;
       }
 
       * {
@@ -21,16 +27,27 @@
 
       html,
       body {
+        height: 100%;
         margin: 0;
         padding: 0;
         background: var(--bg);
         color: var(--text);
         font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
         font-size: 11px;
+        overflow: hidden;
       }
 
       .app {
-        padding: 12px 12px 92px;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .content {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        padding: 12px;
       }
 
       h1 {
@@ -64,8 +81,8 @@
       textarea {
         padding: 6px;
         border-radius: 6px;
-        border: 1px solid var(--border);
-        background: #fff;
+        border: 0;
+        background: var(--field-bg);
         color: var(--text);
       }
 
@@ -74,8 +91,8 @@
       }
 
       button {
-        border: 1px solid var(--border);
-        background: #fff;
+        border: 0;
+        background: var(--field-bg);
         color: var(--text);
         border-radius: 6px;
         padding: 6px;
@@ -83,15 +100,58 @@
       }
 
       button.primary {
-        border-color: var(--primary);
-        background: var(--primary);
-        color: #fff;
+        border-color: #d43d00;
+        background: var(--apply-bg);
+        color: var(--apply-text);
         font-weight: 600;
       }
 
       button:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+      }
+
+      input::placeholder,
+      textarea::placeholder {
+        color: var(--muted);
+      }
+
+      input[type="range"] {
+        width: 100%;
+        margin: 0;
+        appearance: none;
+        background: transparent;
+      }
+
+      input[type="range"]::-webkit-slider-runnable-track {
+        height: 6px;
+        border-radius: 999px;
+        background: var(--slider-track);
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        margin-top: -6px;
+        border-radius: 50%;
+        border: 0;
+        background: var(--primary);
+      }
+
+      input[type="range"]::-moz-range-track {
+        height: 6px;
+        border-radius: 999px;
+        border: 0;
+        background: var(--slider-track);
+      }
+
+      input[type="range"]::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 0;
+        background: var(--primary);
       }
 
       .row {
@@ -117,7 +177,7 @@
 
       .preset-picker-row {
         display: grid;
-        grid-template-columns: 1fr 32px;
+        grid-template-columns: 1fr 32px 32px;
         gap: 6px;
         align-items: center;
       }
@@ -171,20 +231,20 @@
 
       .font-results {
         margin-top: 4px;
-        border: 1px solid var(--border);
+        border: 0;
         border-radius: 6px;
         max-height: 150px;
         overflow: auto;
-        background: #fff;
+        background: var(--field-bg);
       }
 
       .font-item {
         width: 100%;
         text-align: left;
         border: 0;
-        border-bottom: 1px solid #f2f2f2;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 0;
-        background: #fff;
+        background: var(--field-bg);
         padding: 6px;
       }
 
@@ -193,12 +253,12 @@
       }
 
       .font-item:hover {
-        background: #f7faff;
+        background: #3a3a3a;
       }
 
       .slider-row {
         display: grid;
-        grid-template-columns: 1fr auto;
+        grid-template-columns: minmax(0, 4fr) minmax(56px, 1fr);
         gap: 8px;
         align-items: center;
       }
@@ -225,7 +285,7 @@
         position: absolute;
         inset: 0;
         border-radius: 99px;
-        background: #d8d8d8;
+        background: var(--slider-track);
         transition: background 0.15s ease;
       }
 
@@ -237,7 +297,7 @@
         top: 2px;
         left: 2px;
         border-radius: 50%;
-        background: #fff;
+        background: #ffffff;
         transition: transform 0.15s ease;
       }
 
@@ -250,8 +310,8 @@
       }
 
       #status {
-        min-height: 16px;
-        color: var(--muted);
+        min-height: 28px;
+        color: #cfcfcf;
         line-height: 1.35;
       }
 
@@ -264,16 +324,19 @@
       }
 
       .footer-bar {
-        position: sticky;
-        bottom: 0;
-        margin: 0 -12px -12px;
+        flex: 0 0 112px;
+        height: 112px;
         padding: 10px 12px 12px;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.94) 14px, #fff 30px);
-        border-top: 1px solid #f2f2f2;
+        background: var(--footer-bg);
+        border-top: 1px solid var(--footer-bg);
+        display: grid;
+        grid-template-rows: 28px 1fr;
+        gap: 8px;
       }
 
       .footer-bar button {
         display: block;
+        min-height: 54px;
       }
 
       .hint {
@@ -282,129 +345,184 @@
         font-size: 10px;
         line-height: 1.35;
       }
+
+      .section-heading {
+        margin: 0 0 8px;
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .experimental-tag {
+        color: #f5c142;
+      }
+
+      .section-heading-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .font-selection-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .font-column {
+        min-width: 0;
+      }
+
+      .font-column select {
+        margin-top: 6px;
+      }
+
+      .section-divider {
+        padding-top: 12px;
+        border-top: 1px solid var(--divider);
+      }
+
+      .font-size-row {
+        display: grid;
+        grid-template-columns: minmax(0, 4fr) minmax(56px, 1fr);
+        gap: 8px;
+        align-items: center;
+      }
     </style>
   </head>
   <body>
     <div class="app">
-      <h1>Codex Font Remixer</h1>
+      <div class="content">
+        <h1>Codex Font Remixer</h1>
 
-      <section class="section">
-        <label class="label" for="presetSelect">Presets</label>
-        <div class="preset-picker-row">
-          <select id="presetSelect"></select>
-          <button id="choosePresetFolderButton" type="button" class="icon-button" title="Reload saved presets">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="8"></circle>
-              <circle cx="12" cy="12" r="2.25"></circle>
-            </svg>
-          </button>
-        </div>
-        <div id="presetFolderStatus" class="hint">Checking preset storage...</div>
-        <div class="row inline">
-          <button id="loadPresetButton" type="button">Load</button>
-          <button id="savePresetButton" type="button">Save</button>
-        </div>
-        <div id="savePresetInline" class="inline hidden">
-          <div class="row">
-            <input id="savePresetName" type="text" placeholder="Preset name" />
+        <section class="section">
+          <label class="label" for="presetSelect">Presets</label>
+          <div class="preset-picker-row">
+            <select id="presetSelect"></select>
+            <button id="savePresetButton" type="button" class="icon-button" title="Save preset">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 4h11l3 3v13H5z"></path>
+                <path d="M8 4v6h8V4"></path>
+                <path d="M8 20v-6h8v6"></path>
+              </svg>
+            </button>
+            <button id="choosePresetFolderButton" type="button" class="icon-button" title="Reload saved presets">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="8"></circle>
+                <circle cx="12" cy="12" r="2.25"></circle>
+              </svg>
+            </button>
+          </div>
+          <div id="presetFolderStatus" class="hint">Checking preset storage...</div>
+          <div id="savePresetInline" class="inline hidden">
             <div class="row">
-              <button id="savePresetConfirm" type="button">OK</button>
-              <button id="savePresetCancel" type="button">Cancel</button>
+              <input id="savePresetName" type="text" placeholder="Preset name" />
+              <div class="row">
+                <button id="savePresetConfirm" type="button">OK</button>
+                <button id="savePresetCancel" type="button">Cancel</button>
+              </div>
             </div>
           </div>
-        </div>
-        <div id="presetActions" class="row-3 inline hidden">
-          <button id="renamePresetButton" type="button">Rename</button>
-          <button id="overwritePresetButton" type="button">Overwrite</button>
-          <button id="deletePresetButton" type="button">Delete</button>
-        </div>
-        <div id="renamePresetInline" class="inline hidden">
-          <div class="row">
-            <input id="renamePresetName" type="text" placeholder="New preset name" />
+          <div id="presetActions" class="row-3 inline hidden">
+            <button id="renamePresetButton" type="button">Rename</button>
+            <button id="overwritePresetButton" type="button">Overwrite</button>
+            <button id="deletePresetButton" type="button">Delete</button>
+          </div>
+          <div id="renamePresetInline" class="inline hidden">
             <div class="row">
-              <button id="renamePresetConfirm" type="button">OK</button>
-              <button id="renamePresetCancel" type="button">Cancel</button>
+              <input id="renamePresetName" type="text" placeholder="New preset name" />
+              <div class="row">
+                <button id="renamePresetConfirm" type="button">OK</button>
+                <button id="renamePresetCancel" type="button">Cancel</button>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="section">
-        <button id="extractButton" type="button" class="button-with-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M14 4l6 6"></path>
-            <path d="M7 21l-4-4 10.5-10.5 4 4z"></path>
-            <path d="M12 6l6 6"></path>
-            <path d="M5 19l3-3"></path>
-          </svg>
-          <span>Extract</span>
-        </button>
-      </section>
+        <section class="section">
+          <div class="section-heading-row">
+            <div class="section-heading">Font Selection</div>
+            <button id="extractButton" type="button" class="icon-button" title="Extract from selected text">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 4l6 6"></path>
+                <path d="M7 21l-4-4 10.5-10.5 4 4z"></path>
+                <path d="M12 6l6 6"></path>
+                <path d="M5 19l3-3"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="font-selection-grid">
+            <div class="font-column">
+              <label class="label" for="fontASearch">Latin Font</label>
+              <input id="fontASearch" type="text" placeholder="Search font family" />
+              <div id="fontAResults" class="font-results hidden"></div>
+              <select id="fontAStyle" class="inline"></select>
+            </div>
+            <div class="font-column">
+              <label class="label" for="fontBSearch">Japanese Font</label>
+              <input id="fontBSearch" type="text" placeholder="Search font family" />
+              <div id="fontBResults" class="font-results hidden"></div>
+              <select id="fontBStyle" class="inline"></select>
+            </div>
+          </div>
+        </section>
 
-      <section class="section">
-        <label class="label" for="fontASearch">Latin Font</label>
-        <input id="fontASearch" type="text" placeholder="Search font family" />
-        <div id="fontAResults" class="font-results hidden"></div>
-        <select id="fontAStyle" class="inline"></select>
-      </section>
+        <section class="section section-divider">
+          <label class="label" for="fontSize">Font Size</label>
+          <div class="font-size-row">
+            <input id="fontSizeSlider" type="range" min="1" max="420" value="16" />
+            <input id="fontSize" type="number" value="16" min="1" step="1" />
+          </div>
+        </section>
 
-      <section class="section">
-        <label class="label" for="fontBSearch">Japanese Font</label>
-        <input id="fontBSearch" type="text" placeholder="Search font family" />
-        <div id="fontBResults" class="font-results hidden"></div>
-        <select id="fontBStyle" class="inline"></select>
-      </section>
+        <section class="section">
+          <label class="label" for="sizeRatio">Size Ratio</label>
+          <div class="slider-row">
+            <input id="sizeRatio" type="range" min="-30" max="30" value="0" />
+            <input id="sizeRatioField" type="number" min="-30" max="30" step="1" value="0" />
+          </div>
+        </section>
 
-      <section class="section">
-        <label class="label" for="fontSize">Font Size</label>
-        <input id="fontSize" type="number" value="16" min="1" step="1" />
-      </section>
+        <section class="section">
+          <label class="label">Letter Spacing (%)</label>
+          <div class="row">
+            <label class="field-with-label">
+              <span>Latin</span>
+              <input id="spacingLatin" type="number" step="0.1" value="0" />
+            </label>
+            <label class="field-with-label">
+              <span>Kanji</span>
+              <input id="spacingKanji" type="number" step="0.1" value="0" />
+            </label>
+          </div>
+          <div class="row inline">
+            <label class="field-with-label">
+              <span>Hiragana</span>
+              <input id="spacingHiragana" type="number" step="0.1" value="0" />
+            </label>
+            <label class="field-with-label">
+              <span>Katakana</span>
+              <input id="spacingKatakana" type="number" step="0.1" value="0" />
+            </label>
+          </div>
+        </section>
 
-      <section class="section">
-        <label class="label" for="sizeRatio">Size Ratio</label>
-        <div class="slider-row">
-          <input id="sizeRatio" type="range" min="-30" max="30" value="0" />
-          <span id="sizeRatioValue">0%</span>
-        </div>
-      </section>
-
-      <section class="section">
-        <label class="label">Letter Spacing (%)</label>
-        <div class="row">
-          <label class="field-with-label">
-            <span>Latin</span>
-            <input id="spacingLatin" type="number" step="0.1" value="0" />
-          </label>
-          <label class="field-with-label">
-            <span>Kanji</span>
-            <input id="spacingKanji" type="number" step="0.1" value="0" />
-          </label>
-        </div>
-        <div class="row inline">
-          <label class="field-with-label">
-            <span>Hiragana</span>
-            <input id="spacingHiragana" type="number" step="0.1" value="0" />
-          </label>
-          <label class="field-with-label">
-            <span>Katakana</span>
-            <input id="spacingKatakana" type="number" step="0.1" value="0" />
-          </label>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="toggle-row">
-          <span class="label" style="margin: 0">Optical Spacing</span>
-          <label class="switch">
-            <input id="opticalSpacing" type="checkbox" />
-            <span class="switch-track"></span>
-          </label>
-        </div>
-        <div id="opticalIntensityWrap" class="slider-row hidden inline">
-          <input id="opticalIntensity" type="range" min="0" max="100" value="100" />
-          <span id="opticalIntensityValue">100</span>
-        </div>
-      </section>
+        <section class="section">
+          <div class="toggle-row">
+            <span class="label" style="margin: 0">Optical Spacing <span class="experimental-tag">(Experimental!)</span></span>
+            <label class="switch">
+              <input id="opticalSpacing" type="checkbox" />
+              <span class="switch-track"></span>
+            </label>
+          </div>
+          <div id="opticalIntensityWrap" class="slider-row hidden inline">
+            <input id="opticalIntensity" type="range" min="0" max="100" value="100" />
+            <input id="opticalIntensityField" type="number" min="0" max="100" step="1" value="100" />
+          </div>
+        </section>
+      </div>
 
       <div class="footer-bar">
         <div id="status"></div>
@@ -683,8 +801,38 @@
       }
 
       function updateRatioLabels() {
-        el("sizeRatioValue").textContent = `${el("sizeRatio").value}%`;
-        el("opticalIntensityValue").textContent = el("opticalIntensity").value;
+        el("sizeRatioField").value = el("sizeRatio").value;
+        el("opticalIntensityField").value = el("opticalIntensity").value;
+      }
+
+      function syncFontSizeSliderFromInput() {
+        const value = toNumber(el("fontSize").value, 16);
+        const sliderValue = Math.max(1, Math.min(420, value));
+        el("fontSizeSlider").value = String(sliderValue);
+      }
+
+      function syncFontSizeInputFromSlider() {
+        el("fontSize").value = el("fontSizeSlider").value;
+      }
+
+      function syncSizeRatioFieldFromSlider() {
+        el("sizeRatioField").value = el("sizeRatio").value;
+      }
+
+      function syncSizeRatioSliderFromField() {
+        const value = toNumber(el("sizeRatioField").value, 0);
+        const clamped = Math.max(-30, Math.min(30, value));
+        el("sizeRatio").value = String(clamped);
+      }
+
+      function syncOpticalIntensityFieldFromSlider() {
+        el("opticalIntensityField").value = el("opticalIntensity").value;
+      }
+
+      function syncOpticalIntensitySliderFromField() {
+        const value = toNumber(el("opticalIntensityField").value, 100);
+        const clamped = Math.max(0, Math.min(100, value));
+        el("opticalIntensity").value = String(clamped);
       }
 
       function setupToggleVisibility() {
@@ -778,6 +926,7 @@
         }
         if (settings.fontSize != null) {
           el("fontSize").value = String(settings.fontSize);
+          syncFontSizeSliderFromInput();
         }
         if (settings.sizeRatio != null) {
           el("sizeRatio").value = String(settings.sizeRatio);
@@ -803,6 +952,7 @@
 
         updateRatioLabels();
         setupToggleVisibility();
+        syncFontSizeSliderFromInput();
       }
 
       function showInlineEditor(rootId, inputId, initialValue, onConfirm) {
@@ -1181,10 +1331,6 @@
           setStatus("This runtime is using session-only presets right now.", "");
         });
 
-        el("loadPresetButton").addEventListener("click", () => {
-          loadSelectedPresetIntoForm();
-        });
-
         el("savePresetButton").addEventListener("click", () => {
           showInlineEditor("savePresetInline", "savePresetName", "", async (name) => {
             if (!name) {
@@ -1244,6 +1390,12 @@
         el("sizeRatio").addEventListener("input", updateRatioLabels);
         el("opticalIntensity").addEventListener("input", updateRatioLabels);
         el("opticalSpacing").addEventListener("change", setupToggleVisibility);
+        el("fontSizeSlider").addEventListener("input", syncFontSizeInputFromSlider);
+        el("fontSize").addEventListener("input", syncFontSizeSliderFromInput);
+        el("sizeRatio").addEventListener("input", syncSizeRatioFieldFromSlider);
+        el("sizeRatioField").addEventListener("input", syncSizeRatioSliderFromField);
+        el("opticalIntensity").addEventListener("input", syncOpticalIntensityFieldFromSlider);
+        el("opticalIntensityField").addEventListener("input", syncOpticalIntensitySliderFromField);
         el("extractButton").addEventListener("click", () => {
           post({ type: "extract" });
           setStatus("Extracting settings from the selected text node...", "");
@@ -1276,6 +1428,7 @@
       bindGeneralControls();
       updateRatioLabels();
       setupToggleVisibility();
+      syncFontSizeSliderFromInput();
       updatePresetStorageUi();
 
       window.onmessage = async (event) => {
