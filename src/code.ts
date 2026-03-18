@@ -49,8 +49,6 @@ type PluginMessage =
   | { type: "init" }
   | {
       type: "apply";
-      mode?: "selection" | "create";
-      text?: string;
       settings?: Partial<SavedSettings>;
     }
   | {
@@ -694,7 +692,7 @@ function getSelectionInfo(): { message: string } {
   const selection = figma.currentPage.selection;
 
   if (selection.length === 0) {
-    return { message: "No layer selected. Choose one text node or use Create New mode." };
+    return { message: "No layer selected. Choose one text node." };
   }
   if (selection.length > 1) {
     return { message: "Multiple layers selected. Select exactly one text node." };
@@ -793,32 +791,9 @@ async function sendInitPayload(): Promise<void> {
 
 async function handleApply(message: Extract<PluginMessage, { type: "apply" }>): Promise<void> {
   const settings = normalizeSettings(message.settings);
-  const mode = message.mode === "create" ? "create" : "selection";
-
-  if (mode === "create") {
-    const text = typeof message.text === "string" ? message.text : "";
-    if (!text.trim()) {
-      postStatus("warning", "Please enter text before creating a new node.");
-      return;
-    }
-
-    const node = figma.createText();
-    node.x = figma.viewport.center.x;
-    node.y = figma.viewport.center.y;
-
-    await applyFontMix(node, settings, text);
-    figma.currentPage.selection = [node];
-    figma.viewport.scrollAndZoomIntoView([node]);
-
-    await setSavedSettings(settings);
-    postStatus("success", "Created new text node and applied font mix.");
-    postMessage({ type: "selection-info", ...getSelectionInfo() });
-    return;
-  }
-
   const selected = getSingleSelectedTextNode();
   if (selected == null) {
-    postStatus("error", "No selection. Select a single text node or switch to Create New mode.");
+    postStatus("error", "No selection. Select a single text node.");
     return;
   }
   if (selected === "multiple") {

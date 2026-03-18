@@ -237,18 +237,6 @@
         transform: translateX(14px);
       }
 
-      .segmented {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 4px;
-      }
-
-      .segmented button.active {
-        border-color: var(--primary);
-        color: var(--primary);
-        font-weight: 600;
-      }
-
       #status {
         min-height: 16px;
         color: var(--muted);
@@ -394,20 +382,6 @@
         </div>
       </section>
 
-      <section class="section">
-        <label class="label">Mode</label>
-        <div class="segmented">
-          <button id="modeSelection" type="button" class="active">Apply to Selection</button>
-          <button id="modeCreate" type="button">Create New</button>
-        </div>
-        <textarea
-          id="createText"
-          class="inline hidden"
-          rows="3"
-          placeholder="Enter text for new node"
-        ></textarea>
-      </section>
-
       <div class="footer-bar">
         <div id="status"></div>
         <button id="applyButton" type="button" class="primary">Apply</button>
@@ -444,7 +418,6 @@
         fonts: [],
         presets: [],
         selectedPresetId: "",
-        mode: "selection",
         fontA: { family: "", style: "Regular" },
         fontB: { family: "", style: "Regular" },
         presetPersistence: "unknown"
@@ -683,13 +656,6 @@
         }
 
         status.textContent = "Checking preset storage...";
-      }
-
-      function setMode(mode) {
-        state.mode = mode;
-        el("modeSelection").classList.toggle("active", mode === "selection");
-        el("modeCreate").classList.toggle("active", mode === "create");
-        el("createText").classList.toggle("hidden", mode !== "create");
       }
 
       function updateRatioLabels() {
@@ -1251,9 +1217,6 @@
       }
 
       function bindGeneralControls() {
-        el("modeSelection").addEventListener("click", () => setMode("selection"));
-        el("modeCreate").addEventListener("click", () => setMode("create"));
-
         el("sizeRatio").addEventListener("input", updateRatioLabels);
         el("opticalIntensity").addEventListener("input", updateRatioLabels);
         el("opticalSpacing").addEventListener("change", setupToggleVisibility);
@@ -1268,8 +1231,6 @@
 
           post({
             type: "apply",
-            mode: state.mode,
-            text: el("createText").value,
             settings: collectSettings()
           });
           setStatus("Applying...", "");
