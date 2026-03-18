@@ -62,6 +62,7 @@ test("optical spacing tightens latin AV pairs and cross-script transitions expan
 
   const mixedTokens = buildCharacterTokens("Aア", DEFAULT_SETTINGS, 16);
   assert.ok(getPairAdjustment(mixedTokens[0], mixedTokens[1], 100) > 0);
+  assert.equal(getPairAdjustment(mixedTokens[0], mixedTokens[1], 100), 10);
 });
 
 test("katakana optical spacing tightens small kana pairs and loosens voiced kana pairs", () => {

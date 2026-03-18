@@ -250,6 +250,8 @@ const LIGHT_KATAKANA = new Set([
   "・"
 ]);
 
+const PERCENT_PER_PIXEL_AT_16 = 100 / 16;
+
 figma.showUI(__html__, { width: 320, height: 720 });
 
 function classifyCharacter(code: number): ScriptType {
@@ -375,7 +377,7 @@ function getKatakanaEdgeBias(token: CharacterToken): number {
 }
 
 function getKatakanaPairAdjustment(current: CharacterToken, next: CharacterToken, intensity: number): number {
-  const scale = (intensity / 100) * (Math.min(current.fontSize, next.fontSize) / 16);
+  const scale = intensity / 100;
   let adjustment = getKatakanaEdgeBias(current) + getKatakanaEdgeBias(next);
 
   if (SMALL_KATAKANA.has(current.char) || SMALL_KATAKANA.has(next.char)) {
@@ -386,7 +388,7 @@ function getKatakanaPairAdjustment(current: CharacterToken, next: CharacterToken
     adjustment += 0.12;
   }
 
-  return adjustment * scale;
+  return adjustment * PERCENT_PER_PIXEL_AT_16 * scale;
 }
 
 function getPairAdjustment(current: CharacterToken, next: CharacterToken, intensity: number): number {
@@ -398,7 +400,7 @@ function getPairAdjustment(current: CharacterToken, next: CharacterToken, intens
     return 0;
   }
 
-  const scale = (intensity / 100) * (current.fontSize / 16);
+  const scale = intensity / 100;
 
   if (current.script === "japanese" && next.script === "japanese") {
     if (current.japaneseSubtype === "katakana" && next.japaneseSubtype === "katakana") {
@@ -408,19 +410,19 @@ function getPairAdjustment(current: CharacterToken, next: CharacterToken, intens
   }
 
   if (current.script !== next.script) {
-    return 1.6 * scale;
+    return 10 * scale;
   }
 
   if (current.script === "latin" && next.script === "latin") {
     const pairKey = `${current.char}${next.char}`;
     const base = SPECIAL_PAIR_OVERRIDES[pairKey];
     if (base != null) {
-      return base * scale;
+      return base * PERCENT_PER_PIXEL_AT_16 * scale;
     }
 
     const from = getShapeCategory(current.char);
     const to = getShapeCategory(next.char);
-    return OPTICAL_MATRIX[from][to] * scale;
+    return OPTICAL_MATRIX[from][to] * PERCENT_PER_PIXEL_AT_16 * scale;
   }
 
   return 0;
@@ -509,13 +511,13 @@ function applyBatchedLetterSpacing(node: TextNode, tokens: CharacterToken[], spa
       continue;
     }
 
-    node.setRangeLetterSpacing(batchStart, batchEnd, { unit: "PIXELS", value: roundSpacing(currentValue) });
+    node.setRangeLetterSpacing(batchStart, batchEnd, { unit: "PERCENT", value: roundSpacing(currentValue) });
     batchStart = token.start;
     batchEnd = token.end;
     currentValue = value;
   }
 
-  node.setRangeLetterSpacing(batchStart, batchEnd, { unit: "PIXELS", value: roundSpacing(currentValue) });
+  node.setRangeLetterSpacing(batchStart, batchEnd, { unit: "PERCENT", value: roundSpacing(currentValue) });
 }
 
 function normalizeFontDescriptor(
