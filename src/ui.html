@@ -143,6 +143,18 @@
         background: #f7faff;
       }
 
+      .button-with-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .button-with-icon svg {
+        width: 14px;
+        height: 14px;
+      }
+
       .row-3 {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
@@ -315,6 +327,18 @@
             </div>
           </div>
         </div>
+      </section>
+
+      <section class="section">
+        <button id="extractButton" type="button" class="button-with-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 4l6 6"></path>
+            <path d="M7 21l-4-4 10.5-10.5 4 4z"></path>
+            <path d="M12 6l6 6"></path>
+            <path d="M5 19l3-3"></path>
+          </svg>
+          <span>Extract</span>
+        </button>
       </section>
 
       <section class="section">
@@ -1220,6 +1244,10 @@
         el("sizeRatio").addEventListener("input", updateRatioLabels);
         el("opticalIntensity").addEventListener("input", updateRatioLabels);
         el("opticalSpacing").addEventListener("change", setupToggleVisibility);
+        el("extractButton").addEventListener("click", () => {
+          post({ type: "extract" });
+          setStatus("Extracting settings from the selected text node...", "");
+        });
 
         el("applyButton").addEventListener("click", () => {
           if (!state.fontA.family || !state.fontB.family) {
@@ -1309,6 +1337,14 @@
         if (message.type === "selection-info") {
           if (message.message) {
             setStatus(message.message, "");
+          }
+          return;
+        }
+
+        if (message.type === "extracted-settings") {
+          if (message.settings) {
+            applySettingsToForm(message.settings);
+            void saveLocalSettings(collectSettings());
           }
           return;
         }

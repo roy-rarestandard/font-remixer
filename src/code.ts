@@ -47,6 +47,7 @@ type FontFamilyEntry = {
 
 type PluginMessage =
   | { type: "init" }
+  | { type: "extract" }
   | {
       type: "apply";
       settings?: Partial<SavedSettings>;
@@ -490,6 +491,10 @@ function roundSpacing(value: number): number {
   return Number(value.toFixed(3));
 }
 
+function roundSettingNumber(value: number): number {
+  return Number(value.toFixed(1));
+}
+
 function applyBatchedLetterSpacing(node: TextNode, tokens: CharacterToken[], spacingValues: number[]): void {
   if (tokens.length === 0) {
     return;
@@ -688,6 +693,132 @@ function getTextNodeCharacters(node: TextNode): string | null {
   }
 }
 
+function getLetterSpacingPercent(letterSpacing: LetterSpacing, fontSize: number): number {
+  if (letterSpacing.unit === "PERCENT") {
+    return letterSpacing.value;
+  }
+  if (letterSpacing.unit === "PIXELS") {
+    return fontSize > 0 ? (letterSpacing.value / fontSize) * 100 : 0;
+  }
+  return 0;
+}
+
+function getMostCommonFont(tokens: Array<{ fontName: FontName }>, fallback: FontName): FontName {
+  if (!tokens.length) {
+    return fallback;
+  }
+
+  const counts = new Map<string, { fontName: FontName; count: number }>();
+  for (const token of tokens) {
+    const key = `${token.fontName.family}:::${token.fontName.style}`;
+    const entry = counts.get(key);
+    if (entry) {
+      entry.count += 1;
+    } else {
+      counts.set(key, { fontName: token.fontName, count: 1 });
+    }
+  }
+
+  let winner = fallback;
+  let maxCount = -1;
+  for (const entry of counts.values()) {
+    if (entry.count > maxCount) {
+      maxCount = entry.count;
+      winner = entry.fontName;
+    }
+  }
+  return winner;
+}
+
+function getAverageValue(tokens: Array<{ value: number }>, fallback: number): number {
+  if (!tokens.length) {
+    return fallback;
+  }
+  const total = tokens.reduce((sum, token) => sum + token.value, 0);
+  return total / tokens.length;
+}
+
+function extractSettingsFromNode(node: TextNode): SavedSettings {
+  const text = getTextNodeCharacters(node);
+  if (text == null) {
+    throw new Error("Could not read the selected text node.");
+  }
+  if (!text.trim()) {
+    throw new Error("Selected text node is empty.");
+  }
+
+  const segments = node.getStyledTextSegments(["fontName", "fontSize", "letterSpacing"]);
+  if (!segments.length) {
+    throw new Error("Could not read text styles from the selected node.");
+  }
+
+  const segmentForIndex = (index: number) =>
+    segments.find((segment) => index >= segment.start && index < segment.end) ?? segments[segments.length - 1];
+
+  const latinTokens: Array<{ fontName: FontName; value: number }> = [];
+  const japaneseTokens: Array<{ fontName: FontName; value: number }> = [];
+  const hiraganaSpacing: Array<{ value: number }> = [];
+  const katakanaSpacing: Array<{ value: number }> = [];
+  const kanjiSpacing: Array<{ value: number }> = [];
+  const latinSpacing: Array<{ value: number }> = [];
+
+  let index = 0;
+  let previousScript: ScriptType = "latin";
+
+  while (index < text.length) {
+    const codePoint = text.codePointAt(index);
+    if (codePoint == null) {
+      break;
+    }
+
+    const script: ScriptType = isWhitespace(codePoint) && index > 0 ? previousScript : classifyCharacter(codePoint);
+    const segment = segmentForIndex(index);
+    const fontSize = segment.fontSize;
+    const spacingValue = getLetterSpacingPercent(segment.letterSpacing, fontSize);
+
+    if (script === "latin") {
+      latinTokens.push({ fontName: segment.fontName, value: fontSize });
+      latinSpacing.push({ value: spacingValue });
+    } else {
+      japaneseTokens.push({ fontName: segment.fontName, value: fontSize });
+      const subtype = classifyJapaneseSubtype(codePoint);
+      if (subtype === "hiragana") {
+        hiraganaSpacing.push({ value: spacingValue });
+      } else if (subtype === "katakana") {
+        katakanaSpacing.push({ value: spacingValue });
+      } else {
+        kanjiSpacing.push({ value: spacingValue });
+      }
+    }
+
+    previousScript = script;
+    index += codePoint > 0xffff ? 2 : 1;
+  }
+
+  const fontA = getMostCommonFont(latinTokens, DEFAULT_SETTINGS.fontA);
+  const fontB = getMostCommonFont(japaneseTokens, DEFAULT_SETTINGS.fontB);
+  const latinSize = getAverageValue(latinTokens, DEFAULT_SETTINGS.fontSize);
+  const japaneseSize = getAverageValue(japaneseTokens, latinSize * (1 + DEFAULT_SETTINGS.sizeRatio / 100));
+  const sizeRatio = latinSize > 0 ? ((japaneseSize / latinSize) - 1) * 100 : DEFAULT_SETTINGS.sizeRatio;
+
+  return normalizeSettings({
+    fontA,
+    fontB,
+    fontSize: roundSettingNumber(latinSize),
+    sizeRatio: roundSettingNumber(sizeRatio),
+    letterSpacingLatin: roundSettingNumber(getAverageValue(latinSpacing, DEFAULT_SETTINGS.letterSpacingLatin)),
+    letterSpacingKanji: roundSettingNumber(getAverageValue(kanjiSpacing, DEFAULT_SETTINGS.letterSpacingKanji)),
+    letterSpacingHiragana: roundSettingNumber(
+      getAverageValue(hiraganaSpacing, DEFAULT_SETTINGS.letterSpacingHiragana)
+    ),
+    letterSpacingKatakana: roundSettingNumber(
+      getAverageValue(katakanaSpacing, DEFAULT_SETTINGS.letterSpacingKatakana)
+    ),
+    opticalSpacing: false,
+    opticalIntensity: DEFAULT_SETTINGS.opticalIntensity
+  });
+}
+
 function getSelectionInfo(): { message: string } {
   const selection = figma.currentPage.selection;
 
@@ -822,6 +953,27 @@ async function handleApply(message: Extract<PluginMessage, { type: "apply" }>): 
   postMessage({ type: "selection-info", ...getSelectionInfo() });
 }
 
+async function handleExtract(): Promise<void> {
+  const selected = getSingleSelectedTextNode();
+  if (selected == null) {
+    postStatus("error", "No selection. Select a single text node to extract settings.");
+    return;
+  }
+  if (selected === "multiple") {
+    postStatus("error", "Multiple layers selected. Select exactly one text node to extract settings.");
+    return;
+  }
+  if (selected === "non-text") {
+    postStatus("error", "Selected layer is not a text node.");
+    return;
+  }
+
+  const settings = extractSettingsFromNode(selected);
+  await setSavedSettings(settings);
+  postMessage({ type: "extracted-settings", settings });
+  postStatus("success", `Extracted settings from "${selected.name}".`);
+}
+
 async function handleSavePreset(message: Extract<PluginMessage, { type: "save-preset" }>): Promise<void> {
   const name = typeof message.name === "string" ? message.name.trim() : "";
   if (!name) {
@@ -912,6 +1064,9 @@ figma.ui.onmessage = async (rawMessage: PluginMessage) => {
     switch (rawMessage.type) {
       case "init":
         await sendInitPayload();
+        break;
+      case "extract":
+        await handleExtract();
         break;
       case "apply":
         await handleApply(rawMessage);
