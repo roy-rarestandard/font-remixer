@@ -1312,17 +1312,15 @@
           }
           renderPresetSelect();
 
-          if (state.fonts.length) {
-            fontPickerA.setDefault();
-            fontPickerB.setDefault();
-          }
-
           if (message.savedSettings) {
             applySettingsToForm(message.savedSettings);
           } else {
             const localSettings = canPersistOnDevice ? await loadLocalSettings() : null;
             if (localSettings) {
               applySettingsToForm(localSettings);
+            } else if (state.fonts.length) {
+              fontPickerA.setDefault();
+              fontPickerB.setDefault();
             }
           }
 

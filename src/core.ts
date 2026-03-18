@@ -38,14 +38,14 @@ export type CharacterToken = {
 };
 
 export const DEFAULT_SETTINGS: SavedSettings = {
-  fontA: { family: "Inter", style: "Regular" },
-  fontB: { family: "Noto Sans JP", style: "Regular" },
-  fontSize: 16,
-  sizeRatio: 0,
+  fontA: { family: "Helvetica Neue", style: "Medium" },
+  fontB: { family: "Hiragino Sans", style: "W6" },
+  fontSize: 40,
+  sizeRatio: -10,
   letterSpacingLatin: 0,
   letterSpacingKanji: 0,
-  letterSpacingHiragana: 0,
-  letterSpacingKatakana: 0,
+  letterSpacingHiragana: -2,
+  letterSpacingKatakana: -4,
   opticalSpacing: false,
   opticalIntensity: 100
 };
