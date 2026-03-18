@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "npm run build && node --test tests/*.test.cjs",
+    "qa": "npm run test"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.117.0",

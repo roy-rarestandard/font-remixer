@@ -17,12 +17,6 @@ type SavedSettings = {
   opticalIntensity: number;
 };
 
-type Preset = {
-  id: string;
-  name: string;
-  settings: SavedSettings;
-};
-
 type CharacterRange = {
   start: number;
   end: number;
@@ -38,6 +32,12 @@ type CharacterToken = {
   japaneseSubtype: JapaneseSubtype | null;
   fontSize: number;
   spacingBase: number;
+};
+
+type Preset = {
+  id: string;
+  name: string;
+  settings: SavedSettings;
 };
 
 type FontFamilyEntry = {
@@ -378,12 +378,10 @@ function getKatakanaPairAdjustment(current: CharacterToken, next: CharacterToken
   const scale = (intensity / 100) * (Math.min(current.fontSize, next.fontSize) / 16);
   let adjustment = getKatakanaEdgeBias(current) + getKatakanaEdgeBias(next);
 
-  // Small kana combinations like フィ, キャ, and ック usually need extra tightening.
   if (SMALL_KATAKANA.has(current.char) || SMALL_KATAKANA.has(next.char)) {
     adjustment -= 0.14;
   }
 
-  // Voiced kana carry more visible mass, so give those pairs a little more breathing room.
   if (isVoicedKana(current.char) || isVoicedKana(next.char)) {
     adjustment += 0.12;
   }
@@ -428,25 +426,6 @@ function getPairAdjustment(current: CharacterToken, next: CharacterToken, intens
   return 0;
 }
 
-async function loadAllFontsOnNode(node: TextNode): Promise<void> {
-  const segments = node.getStyledTextSegments(["fontName"]);
-  const loaded = new Set<string>();
-
-  for (const segment of segments) {
-    const key = `${segment.fontName.family}:::${segment.fontName.style}`;
-    if (loaded.has(key)) {
-      continue;
-    }
-    loaded.add(key);
-
-    try {
-      await figma.loadFontAsync(segment.fontName);
-    } catch (error) {
-      throw new Error(`Failed to load existing font "${segment.fontName.family} ${segment.fontName.style}".`);
-    }
-  }
-}
-
 function buildCharacterTokens(text: string, settings: SavedSettings, japaneseSize: number): CharacterToken[] {
   const tokens: CharacterToken[] = [];
   let index = 0;
@@ -482,6 +461,25 @@ function buildCharacterTokens(text: string, settings: SavedSettings, japaneseSiz
   }
 
   return tokens;
+}
+
+async function loadAllFontsOnNode(node: TextNode): Promise<void> {
+  const segments = node.getStyledTextSegments(["fontName"]);
+  const loaded = new Set<string>();
+
+  for (const segment of segments) {
+    const key = `${segment.fontName.family}:::${segment.fontName.style}`;
+    if (loaded.has(key)) {
+      continue;
+    }
+    loaded.add(key);
+
+    try {
+      await figma.loadFontAsync(segment.fontName);
+    } catch (error) {
+      throw new Error(`Failed to load existing font "${segment.fontName.family} ${segment.fontName.style}".`);
+    }
+  }
 }
 
 function roughlyEqual(a: number, b: number): boolean {
@@ -520,7 +518,10 @@ function applyBatchedLetterSpacing(node: TextNode, tokens: CharacterToken[], spa
   node.setRangeLetterSpacing(batchStart, batchEnd, { unit: "PIXELS", value: roundSpacing(currentValue) });
 }
 
-function normalizeFontDescriptor(raw: Partial<FontName> | undefined, fallback: FontName): FontName {
+function normalizeFontDescriptor(
+  raw: Partial<FontDescriptor> | undefined,
+  fallback: FontDescriptor
+): FontDescriptor {
   if (!raw) {
     return fallback;
   }

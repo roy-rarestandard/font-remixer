@@ -420,6 +420,25 @@
       const DEVICE_DB_NAME = "codex-font-remixer";
       const DEVICE_DB_STORE = "storage";
       const DEVICE_STORAGE_PROBE_KEY = "__codex-font-remixer-probe__";
+      const BUILTIN_PRESETS = [
+        {
+          id: "builtin-space-grotesk-mplus1p",
+          name: "Space Grotesk + M PLUS 1p",
+          builtIn: true,
+          settings: {
+            fontA: { family: "Space Grotesk", style: "Regular" },
+            fontB: { family: "M PLUS 1p", style: "Regular" },
+            fontSize: 40,
+            sizeRatio: 0,
+            letterSpacingLatin: -5,
+            letterSpacingKanji: 0,
+            letterSpacingHiragana: -2,
+            letterSpacingKatakana: -2,
+            opticalSpacing: false,
+            opticalIntensity: 100
+          }
+        }
+      ];
 
       const state = {
         fonts: [],
@@ -450,6 +469,12 @@
         return Number.isFinite(parsed) ? parsed : fallback;
       }
 
+      function normalizeFontKey(value) {
+        return String(value || "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "");
+      }
+
       function createPresetId() {
         return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
       }
@@ -464,8 +489,24 @@
         return {
           id: value.id,
           name: value.name,
+          builtIn: Boolean(value.builtIn),
           settings: value.settings && typeof value.settings === "object" ? value.settings : {}
         };
+      }
+
+      function mergeBuiltInPresets(presets) {
+        const builtInIds = new Set(BUILTIN_PRESETS.map((preset) => preset.id));
+        const customPresets = presets.filter((preset) => !builtInIds.has(preset.id));
+        return BUILTIN_PRESETS.concat(customPresets);
+      }
+
+      function getPersistablePresets() {
+        return state.presets.filter((preset) => !preset.builtIn);
+      }
+
+      function isBuiltInPresetSelected() {
+        const preset = getPresetById(state.selectedPresetId);
+        return Boolean(preset && preset.builtIn);
       }
 
       function supportsLocalStorageFallback() {
@@ -584,13 +625,13 @@
       async function loadLocalPresets() {
         const parsed = await readDeviceJson(LOCAL_PRESETS_KEY);
         if (!Array.isArray(parsed)) {
-          return [];
+          return mergeBuiltInPresets([]);
         }
-        return parsed.map(normalizePresetRecord).filter(Boolean);
+        return mergeBuiltInPresets(parsed.map(normalizePresetRecord).filter(Boolean));
       }
 
       async function saveLocalPresets() {
-        return await writeDeviceJson(LOCAL_PRESETS_KEY, state.presets);
+        return await writeDeviceJson(LOCAL_PRESETS_KEY, getPersistablePresets());
       }
 
       async function loadLocalSettings() {
@@ -605,7 +646,7 @@
       async function reloadDevicePresets(showStatus) {
         state.presets = await loadLocalPresets();
         renderPresetSelect();
-        updatePresetFolderUi();
+        updatePresetStorageUi();
 
         if (showStatus) {
           setStatus(
@@ -619,10 +660,10 @@
 
       function setPresetPersistence(mode) {
         state.presetPersistence = mode;
-        updatePresetFolderUi();
+        updatePresetStorageUi();
       }
 
-      function updatePresetFolderUi() {
+      function updatePresetStorageUi() {
         const button = el("choosePresetFolderButton");
         const status = el("presetFolderStatus");
         const isDevice = state.presetPersistence === "device";
@@ -684,11 +725,33 @@
           select.value = "";
         }
 
-        el("presetActions").classList.toggle("hidden", !state.selectedPresetId);
+        const hasSelection = Boolean(state.selectedPresetId);
+        el("presetActions").classList.toggle("hidden", !hasSelection);
+        const builtInSelected = isBuiltInPresetSelected();
+        el("renamePresetButton").disabled = builtInSelected;
+        el("overwritePresetButton").disabled = builtInSelected;
+        el("deletePresetButton").disabled = builtInSelected;
       }
 
       function getPresetById(id) {
         return state.presets.find((preset) => preset.id === id) || null;
+      }
+
+      function loadSelectedPresetIntoForm() {
+        if (!state.selectedPresetId) {
+          setStatus("Select a preset first.", "error");
+          return false;
+        }
+
+        const preset = getPresetById(state.selectedPresetId);
+        if (!preset) {
+          setStatus("Preset not found.", "error");
+          return false;
+        }
+
+        applySettingsToForm(preset.settings);
+        setStatus(`Loaded preset "${preset.name}".`, "");
+        return true;
       }
 
       function collectSettings() {
@@ -814,6 +877,152 @@
         cancelButton.addEventListener("click", onCancelClick, { once: true });
       }
 
+      function postSessionPresetMessage(message, statusMessage) {
+        post(message);
+        if (statusMessage) {
+          setStatus(statusMessage, "");
+        }
+      }
+
+      async function tryPersistPresetsOnDevice() {
+        if (state.presetPersistence !== "device") {
+          return false;
+        }
+
+        if (await saveLocalPresets()) {
+          return true;
+        }
+
+        setPresetPersistence("session");
+        return false;
+      }
+
+      async function savePresetByName(name) {
+        const settings = collectSettings();
+
+        if (state.presetPersistence === "session") {
+          postSessionPresetMessage(
+            { type: "save-preset", name, settings },
+            `Preset "${name}" saved for this session only.`
+          );
+          return;
+        }
+
+        state.presets.push({
+          id: createPresetId(),
+          name,
+          settings
+        });
+
+        if (!(await tryPersistPresetsOnDevice())) {
+          state.presets.pop();
+          postSessionPresetMessage(
+            { type: "save-preset", name, settings },
+            `Could not save on this device. Preset "${name}" was saved for this session only.`
+          );
+          return;
+        }
+
+        state.selectedPresetId = state.presets[state.presets.length - 1].id;
+        renderPresetSelect();
+        setStatus(`Preset "${name}" saved on this device.`, "success");
+      }
+
+      async function renameSelectedPreset(newName) {
+        const preset = getPresetById(state.selectedPresetId);
+        if (!preset) {
+          setStatus("Preset not found.", "error");
+          return;
+        }
+
+        if (state.presetPersistence === "session") {
+          postSessionPresetMessage(
+            { type: "update-preset", id: state.selectedPresetId, name: newName },
+            `Preset "${newName}" renamed for this session only.`
+          );
+          return;
+        }
+
+        const previousName = preset.name;
+        preset.name = newName;
+
+        if (!(await tryPersistPresetsOnDevice())) {
+          preset.name = previousName;
+          postSessionPresetMessage(
+            { type: "update-preset", id: state.selectedPresetId, name: newName },
+            `Could not rename on this device. Preset "${newName}" was updated for this session only.`
+          );
+          return;
+        }
+
+        renderPresetSelect();
+        setStatus(`Preset "${newName}" renamed on this device.`, "success");
+      }
+
+      async function overwriteSelectedPreset() {
+        const preset = getPresetById(state.selectedPresetId);
+        if (!preset) {
+          setStatus("Preset not found.", "error");
+          return;
+        }
+
+        const settings = collectSettings();
+
+        if (state.presetPersistence === "session") {
+          postSessionPresetMessage(
+            { type: "update-preset", id: state.selectedPresetId, settings },
+            `Preset "${preset.name}" overwritten for this session only.`
+          );
+          return;
+        }
+
+        const previousSettings = preset.settings;
+        preset.settings = settings;
+
+        if (!(await tryPersistPresetsOnDevice())) {
+          preset.settings = previousSettings;
+          postSessionPresetMessage(
+            { type: "update-preset", id: state.selectedPresetId, settings },
+            `Could not update on this device. Preset "${preset.name}" was overwritten for this session only.`
+          );
+          return;
+        }
+
+        setStatus(`Preset "${preset.name}" overwritten on this device.`, "success");
+      }
+
+      async function deleteSelectedPreset() {
+        const next = state.presets.filter((preset) => preset.id !== state.selectedPresetId);
+        if (next.length === state.presets.length) {
+          setStatus("Preset not found.", "error");
+          return;
+        }
+
+        if (state.presetPersistence === "session") {
+          post({ type: "delete-preset", id: state.selectedPresetId });
+          state.selectedPresetId = "";
+          renderPresetSelect();
+          setStatus("Preset deleted for this session only.", "");
+          return;
+        }
+
+        const previousPresets = state.presets.slice();
+        state.presets = next;
+
+        if (!(await tryPersistPresetsOnDevice())) {
+          state.presets = previousPresets;
+          post({ type: "delete-preset", id: state.selectedPresetId });
+          state.selectedPresetId = "";
+          renderPresetSelect();
+          setStatus("Could not delete from device storage. Preset was deleted for this session only.", "");
+          return;
+        }
+
+        state.selectedPresetId = "";
+        renderPresetSelect();
+        setStatus("Preset deleted from this device.", "success");
+      }
+
       function createFontPicker(searchId, resultsId, styleId, onChange) {
         const searchInput = el(searchId);
         const results = el(resultsId);
@@ -822,7 +1031,13 @@
         let selectedFamily = "";
 
         function findFamily(name) {
-          return state.fonts.find((font) => font.family === name) || null;
+          const exact = state.fonts.find((font) => font.family === name);
+          if (exact) {
+            return exact;
+          }
+
+          const normalizedName = normalizeFontKey(name);
+          return state.fonts.find((font) => normalizeFontKey(font.family) === normalizedName) || null;
         }
 
         function chooseStyle(styles, preferredStyle) {
@@ -877,10 +1092,12 @@
         }
 
         function applyFamilySelection(family, preferredStyle) {
-          selectedFamily = family;
-          searchInput.value = family;
-          const selectedStyle = renderStyles(family, preferredStyle);
-          onChange({ family, style: selectedStyle || "Regular" });
+          const record = findFamily(family);
+          const resolvedFamily = record ? record.family : family;
+          selectedFamily = resolvedFamily;
+          searchInput.value = resolvedFamily;
+          const selectedStyle = renderStyles(resolvedFamily, preferredStyle);
+          onChange({ family: resolvedFamily, style: selectedStyle || "Regular" });
           results.classList.add("hidden");
         }
 
@@ -960,7 +1177,10 @@
       function bindPresetControls() {
         el("presetSelect").addEventListener("change", (event) => {
           state.selectedPresetId = event.target.value;
-          el("presetActions").classList.toggle("hidden", !state.selectedPresetId);
+          renderPresetSelect();
+          if (state.selectedPresetId) {
+            loadSelectedPresetIntoForm();
+          }
         });
 
         el("choosePresetFolderButton").addEventListener("click", async () => {
@@ -972,17 +1192,7 @@
         });
 
         el("loadPresetButton").addEventListener("click", () => {
-          if (!state.selectedPresetId) {
-            setStatus("Select a preset first.", "error");
-            return;
-          }
-          const preset = getPresetById(state.selectedPresetId);
-          if (!preset) {
-            setStatus("Preset not found.", "error");
-            return;
-          }
-          applySettingsToForm(preset.settings);
-          setStatus(`Loaded preset "${preset.name}".`, "");
+          loadSelectedPresetIntoForm();
         });
 
         el("savePresetButton").addEventListener("click", () => {
@@ -991,36 +1201,17 @@
               setStatus("Preset name is required.", "error");
               return;
             }
-
-            if (state.presetPersistence === "session") {
-              post({ type: "save-preset", name, settings: collectSettings() });
-              setStatus(`Preset "${name}" saved for this session only.`, "");
-              return;
-            }
-
-            state.presets.push({
-              id: createPresetId(),
-              name,
-              settings: collectSettings()
-            });
-
-            if (!(await saveLocalPresets())) {
-              state.presets.pop();
-              setPresetPersistence("session");
-              post({ type: "save-preset", name, settings: collectSettings() });
-              setStatus(`Could not save on this device. Preset "${name}" was saved for this session only.`, "");
-              return;
-            }
-
-            state.selectedPresetId = state.presets[state.presets.length - 1].id;
-            renderPresetSelect();
-            setStatus(`Preset "${name}" saved on this device.`, "success");
+            await savePresetByName(name);
           });
         });
 
         el("renamePresetButton").addEventListener("click", () => {
           if (!state.selectedPresetId) {
             setStatus("Select a preset first.", "error");
+            return;
+          }
+          if (isBuiltInPresetSelected()) {
+            setStatus("Built-in presets cannot be renamed.", "");
             return;
           }
           const preset = getPresetById(state.selectedPresetId);
@@ -1030,28 +1221,7 @@
               setStatus("Preset name is required.", "error");
               return;
             }
-            if (!preset) {
-              setStatus("Preset not found.", "error");
-              return;
-            }
-
-            if (state.presetPersistence === "session") {
-              post({ type: "update-preset", id: state.selectedPresetId, name: newName });
-              setStatus(`Preset "${newName}" renamed for this session only.`, "");
-              return;
-            }
-
-            const previousName = preset.name;
-            preset.name = newName;
-            if (!(await saveLocalPresets())) {
-              preset.name = previousName;
-              setPresetPersistence("session");
-              post({ type: "update-preset", id: state.selectedPresetId, name: newName });
-              setStatus(`Could not rename on this device. Preset "${newName}" was updated for this session only.`, "");
-              return;
-            }
-            renderPresetSelect();
-            setStatus(`Preset "${newName}" renamed on this device.`, "success");
+            await renameSelectedPreset(newName);
           });
         });
 
@@ -1060,28 +1230,11 @@
             setStatus("Select a preset first.", "error");
             return;
           }
-          const preset = getPresetById(state.selectedPresetId);
-          if (!preset) {
-            setStatus("Preset not found.", "error");
+          if (isBuiltInPresetSelected()) {
+            setStatus("Built-in presets cannot be overwritten. Save a new preset instead.", "");
             return;
           }
-
-          if (state.presetPersistence === "session") {
-            post({ type: "update-preset", id: state.selectedPresetId, settings: collectSettings() });
-            setStatus(`Preset "${preset.name}" overwritten for this session only.`, "");
-            return;
-          }
-
-          const previousSettings = preset.settings;
-          preset.settings = collectSettings();
-          if (!(await saveLocalPresets())) {
-            preset.settings = previousSettings;
-            setPresetPersistence("session");
-            post({ type: "update-preset", id: state.selectedPresetId, settings: collectSettings() });
-            setStatus(`Could not update on this device. Preset "${preset.name}" was overwritten for this session only.`, "");
-            return;
-          }
-          setStatus(`Preset "${preset.name}" overwritten on this device.`, "success");
+          await overwriteSelectedPreset();
         });
 
         el("deletePresetButton").addEventListener("click", async () => {
@@ -1089,34 +1242,11 @@
             setStatus("Select a preset first.", "error");
             return;
           }
-
-          if (state.presetPersistence === "session") {
-            post({ type: "delete-preset", id: state.selectedPresetId });
-            state.selectedPresetId = "";
-            renderPresetSelect();
-            setStatus("Preset deleted for this session only.", "");
+          if (isBuiltInPresetSelected()) {
+            setStatus("Built-in presets cannot be deleted.", "");
             return;
           }
-
-          const next = state.presets.filter((preset) => preset.id !== state.selectedPresetId);
-          if (next.length === state.presets.length) {
-            setStatus("Preset not found.", "error");
-            return;
-          }
-          const previousPresets = state.presets.slice();
-          state.presets = next;
-          if (!(await saveLocalPresets())) {
-            state.presets = previousPresets;
-            setPresetPersistence("session");
-            post({ type: "delete-preset", id: state.selectedPresetId });
-            state.selectedPresetId = "";
-            renderPresetSelect();
-            setStatus("Could not delete from device storage. Preset was deleted for this session only.", "");
-            return;
-          }
-          state.selectedPresetId = "";
-          renderPresetSelect();
-          setStatus("Preset deleted from this device.", "success");
+          await deleteSelectedPreset();
         });
       }
 
@@ -1157,7 +1287,7 @@
       bindGeneralControls();
       updateRatioLabels();
       setupToggleVisibility();
-      updatePresetFolderUi();
+      updatePresetStorageUi();
 
       window.onmessage = async (event) => {
         const message = event.data.pluginMessage;
@@ -1175,7 +1305,7 @@
           if (localPresets.length) {
             state.presets = localPresets;
           } else {
-            state.presets = backendPresets;
+            state.presets = mergeBuiltInPresets(backendPresets);
             if (canPersistOnDevice && state.presets.length) {
               void saveLocalPresets();
             }
@@ -1204,13 +1334,13 @@
 
         if (message.type === "presets") {
           if (state.presetPersistence === "session") {
-            state.presets = Array.isArray(message.presets) ? message.presets : [];
+            state.presets = mergeBuiltInPresets(Array.isArray(message.presets) ? message.presets : []);
             renderPresetSelect();
             return;
           }
 
           if (!state.presets.length && Array.isArray(message.presets) && message.presets.length) {
-            state.presets = message.presets;
+            state.presets = mergeBuiltInPresets(message.presets);
             void saveLocalPresets();
             renderPresetSelect();
           }
