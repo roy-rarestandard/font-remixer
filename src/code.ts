@@ -1,6 +1,5 @@
 type ScriptType = "latin" | "japanese";
 type JapaneseSubtype = "hiragana" | "katakana" | "kanji";
-type ShapeCategory = "round" | "flat" | "diagonal" | "open" | "narrow";
 
 type FontDescriptor = FontName;
 
@@ -9,12 +8,11 @@ type SavedSettings = {
   fontB: FontDescriptor;
   fontSize: number;
   sizeRatio: number;
+  letterSpacingUnit: "em";
   letterSpacingLatin: number;
   letterSpacingKanji: number;
   letterSpacingHiragana: number;
   letterSpacingKatakana: number;
-  opticalSpacing: boolean;
-  opticalIntensity: number;
 };
 
 type CharacterRange = {
@@ -27,10 +25,8 @@ type CharacterToken = {
   start: number;
   end: number;
   codePoint: number;
-  char: string;
   script: ScriptType;
   japaneseSubtype: JapaneseSubtype | null;
-  fontSize: number;
   spacingBase: number;
 };
 
@@ -68,6 +64,10 @@ type PluginMessage =
       id?: string;
     }
   | {
+      type: "resize-ui";
+      height?: number;
+    }
+  | {
       type: "close";
     };
 
@@ -80,178 +80,16 @@ const DEFAULT_SETTINGS: SavedSettings = {
   fontB: { family: "Hiragino Sans", style: "W6" },
   fontSize: 40,
   sizeRatio: -10,
+  letterSpacingUnit: "em",
   letterSpacingLatin: 0,
   letterSpacingKanji: 0,
-  letterSpacingHiragana: -2,
-  letterSpacingKatakana: -4,
-  opticalSpacing: false,
-  opticalIntensity: 100
+  letterSpacingHiragana: -0.02,
+  letterSpacingKatakana: -0.04
 };
 
-const LATIN_SHAPE_CATEGORY: Record<string, ShapeCategory> = {
-  A: "diagonal",
-  B: "flat",
-  C: "round",
-  D: "flat",
-  E: "flat",
-  F: "flat",
-  G: "round",
-  H: "flat",
-  I: "narrow",
-  J: "open",
-  K: "diagonal",
-  L: "flat",
-  M: "flat",
-  N: "flat",
-  O: "round",
-  P: "flat",
-  Q: "round",
-  R: "flat",
-  S: "round",
-  T: "open",
-  U: "round",
-  V: "diagonal",
-  W: "diagonal",
-  X: "diagonal",
-  Y: "diagonal",
-  Z: "diagonal",
-  a: "round",
-  b: "flat",
-  c: "round",
-  d: "flat",
-  e: "round",
-  f: "open",
-  g: "round",
-  h: "flat",
-  i: "narrow",
-  j: "narrow",
-  k: "diagonal",
-  l: "narrow",
-  m: "flat",
-  n: "flat",
-  o: "round",
-  p: "flat",
-  q: "flat",
-  r: "open",
-  s: "round",
-  t: "open",
-  u: "round",
-  v: "diagonal",
-  w: "diagonal",
-  x: "diagonal",
-  y: "diagonal",
-  z: "diagonal",
-  "0": "round",
-  "1": "narrow",
-  "2": "diagonal",
-  "3": "round",
-  "4": "open",
-  "5": "open",
-  "6": "round",
-  "7": "diagonal",
-  "8": "round",
-  "9": "round",
-  "!": "narrow",
-  "?": "open",
-  ".": "narrow",
-  ",": "narrow",
-  ":": "narrow",
-  ";": "narrow",
-  "-": "flat",
-  "_": "flat",
-  "(": "round",
-  ")": "round",
-  "[": "flat",
-  "]": "flat",
-  "{": "round",
-  "}": "round",
-  "/": "diagonal",
-  "\\": "diagonal",
-  "'": "narrow",
-  '"': "narrow",
-  "|": "narrow",
-  "+": "flat",
-  "*": "diagonal",
-  "&": "round",
-  "%": "diagonal",
-  "#": "flat",
-  "@": "round",
-  "$": "open",
-  "<": "diagonal",
-  ">": "diagonal"
-};
+const PLUGIN_UI_WIDTH = 320;
 
-const OPTICAL_MATRIX: Record<ShapeCategory, Record<ShapeCategory, number>> = {
-  round: { round: -0.8, flat: -0.45, diagonal: -0.6, open: -0.35, narrow: -0.3 },
-  flat: { round: -0.35, flat: -0.2, diagonal: -0.4, open: -0.25, narrow: -0.2 },
-  diagonal: { round: -0.65, flat: -0.45, diagonal: -0.4, open: -0.3, narrow: -0.35 },
-  open: { round: -0.25, flat: -0.2, diagonal: -0.25, open: -0.1, narrow: -0.15 },
-  narrow: { round: -0.25, flat: -0.15, diagonal: -0.3, open: -0.12, narrow: -0.05 }
-};
-
-const SPECIAL_PAIR_OVERRIDES: Record<string, number> = {
-  AV: -1.2,
-  VA: -1.0,
-  AW: -1.0,
-  WA: -0.9,
-  AY: -0.8,
-  YA: -0.7,
-  To: -0.8,
-  Ta: -0.6,
-  LT: -0.6,
-  LY: -0.7,
-  FA: -0.7,
-  Fo: -0.5,
-  Te: -0.5,
-  Yo: -0.6,
-  Tr: -0.4
-};
-
-const SMALL_KATAKANA = new Set([
-  "ァ",
-  "ィ",
-  "ゥ",
-  "ェ",
-  "ォ",
-  "ッ",
-  "ャ",
-  "ュ",
-  "ョ",
-  "ヮ",
-  "ヵ",
-  "ヶ",
-  "ｧ",
-  "ｨ",
-  "ｩ",
-  "ｪ",
-  "ｫ",
-  "ｯ",
-  "ｬ",
-  "ｭ",
-  "ｮ",
-  "ﾜ"
-]);
-
-const LIGHT_KATAKANA = new Set([
-  "イ",
-  "ロ",
-  "ト",
-  "リ",
-  "ル",
-  "レ",
-  "ハ",
-  "ヒ",
-  "ヘ",
-  "ホ",
-  "ニ",
-  "ン",
-  "ー",
-  "・"
-]);
-
-const PERCENT_PER_PIXEL_AT_16 = 100 / 16;
-
-figma.showUI(__html__, { width: 320, height: 720 });
+figma.showUI(__html__, { width: PLUGIN_UI_WIDTH, height: 600 });
 
 function classifyCharacter(code: number): ScriptType {
   if (code >= 0x0020 && code <= 0x024f) {
@@ -338,96 +176,7 @@ function getLetterSpacingForChar(script: ScriptType, codePoint: number, settings
   return settings.letterSpacingKanji;
 }
 
-function getShapeCategory(char: string): ShapeCategory {
-  return LATIN_SHAPE_CATEGORY[char] ?? "flat";
-}
-
-function isVoicedKana(char: string): boolean {
-  const normalized = char.normalize("NFD");
-  return normalized.includes("\u3099") || normalized.includes("\u309A");
-}
-
-function getKatakanaEdgeBias(token: CharacterToken): number {
-  if (token.japaneseSubtype !== "katakana") {
-    return 0;
-  }
-
-  if (SMALL_KATAKANA.has(token.char)) {
-    return -0.34;
-  }
-
-  if (token.char === "ー") {
-    return -0.12;
-  }
-
-  if (token.char === "・") {
-    return -0.08;
-  }
-
-  if (isVoicedKana(token.char)) {
-    return 0.2;
-  }
-
-  if (LIGHT_KATAKANA.has(token.char)) {
-    return -0.08;
-  }
-
-  return 0;
-}
-
-function getKatakanaPairAdjustment(current: CharacterToken, next: CharacterToken, intensity: number): number {
-  const scale = intensity / 100;
-  let adjustment = getKatakanaEdgeBias(current) + getKatakanaEdgeBias(next);
-
-  if (SMALL_KATAKANA.has(current.char) || SMALL_KATAKANA.has(next.char)) {
-    adjustment -= 0.14;
-  }
-
-  if (isVoicedKana(current.char) || isVoicedKana(next.char)) {
-    adjustment += 0.12;
-  }
-
-  return adjustment * PERCENT_PER_PIXEL_AT_16 * scale;
-}
-
-function getPairAdjustment(current: CharacterToken, next: CharacterToken, intensity: number): number {
-  if (intensity <= 0) {
-    return 0;
-  }
-
-  if (isWhitespace(current.codePoint) || isWhitespace(next.codePoint)) {
-    return 0;
-  }
-
-  const scale = intensity / 100;
-
-  if (current.script === "japanese" && next.script === "japanese") {
-    if (current.japaneseSubtype === "katakana" && next.japaneseSubtype === "katakana") {
-      return getKatakanaPairAdjustment(current, next, intensity);
-    }
-    return 0;
-  }
-
-  if (current.script !== next.script) {
-    return 10 * scale;
-  }
-
-  if (current.script === "latin" && next.script === "latin") {
-    const pairKey = `${current.char}${next.char}`;
-    const base = SPECIAL_PAIR_OVERRIDES[pairKey];
-    if (base != null) {
-      return base * PERCENT_PER_PIXEL_AT_16 * scale;
-    }
-
-    const from = getShapeCategory(current.char);
-    const to = getShapeCategory(next.char);
-    return OPTICAL_MATRIX[from][to] * PERCENT_PER_PIXEL_AT_16 * scale;
-  }
-
-  return 0;
-}
-
-function buildCharacterTokens(text: string, settings: SavedSettings, japaneseSize: number): CharacterToken[] {
+function buildCharacterTokens(text: string, settings: SavedSettings): CharacterToken[] {
   const tokens: CharacterToken[] = [];
   let index = 0;
   let previousScript: ScriptType = "latin";
@@ -438,11 +187,9 @@ function buildCharacterTokens(text: string, settings: SavedSettings, japaneseSiz
       break;
     }
 
-    const char = String.fromCodePoint(codePoint);
     const resolvedScript: ScriptType =
       isWhitespace(codePoint) && index > 0 ? previousScript : classifyCharacter(codePoint);
     const japaneseSubtype = resolvedScript === "japanese" ? classifyJapaneseSubtype(codePoint) : null;
-    const fontSize = resolvedScript === "japanese" ? japaneseSize : settings.fontSize;
     const spacingBase = getLetterSpacingForChar(resolvedScript, codePoint, settings);
     const end = index + (codePoint > 0xffff ? 2 : 1);
 
@@ -450,10 +197,8 @@ function buildCharacterTokens(text: string, settings: SavedSettings, japaneseSiz
       start: index,
       end,
       codePoint,
-      char,
       script: resolvedScript,
       japaneseSubtype,
-      fontSize,
       spacingBase
     });
 
@@ -495,6 +240,14 @@ function roundSettingNumber(value: number): number {
   return Number(value.toFixed(1));
 }
 
+function roundEmValue(value: number): number {
+  return Number(value.toFixed(2));
+}
+
+function emToFigmaPercent(value: number): number {
+  return value * 100;
+}
+
 function applyBatchedLetterSpacing(node: TextNode, tokens: CharacterToken[], spacingValues: number[]): void {
   if (tokens.length === 0) {
     return;
@@ -514,13 +267,19 @@ function applyBatchedLetterSpacing(node: TextNode, tokens: CharacterToken[], spa
       continue;
     }
 
-    node.setRangeLetterSpacing(batchStart, batchEnd, { unit: "PERCENT", value: roundSpacing(currentValue) });
+    node.setRangeLetterSpacing(batchStart, batchEnd, {
+      unit: "PERCENT",
+      value: roundSpacing(emToFigmaPercent(currentValue))
+    });
     batchStart = token.start;
     batchEnd = token.end;
     currentValue = value;
   }
 
-  node.setRangeLetterSpacing(batchStart, batchEnd, { unit: "PERCENT", value: roundSpacing(currentValue) });
+  node.setRangeLetterSpacing(batchStart, batchEnd, {
+    unit: "PERCENT",
+    value: roundSpacing(emToFigmaPercent(currentValue))
+  });
 }
 
 function normalizeFontDescriptor(
@@ -551,18 +310,31 @@ function toFiniteNumber(value: unknown, fallback: number): number {
 
 function normalizeSettings(raw: Partial<SavedSettings> | undefined): SavedSettings {
   const source = raw ?? {};
+  const sourceUsesEm = source.letterSpacingUnit === "em";
+  const normalizeLetterSpacing = (value: unknown, fallback: number) => {
+    if (value == null) {
+      return fallback;
+    }
+    const numericValue = toFiniteNumber(value, fallback);
+    return sourceUsesEm ? numericValue : Number((numericValue / 100).toFixed(6));
+  };
+
   return {
     fontA: normalizeFontDescriptor(source.fontA, DEFAULT_SETTINGS.fontA),
     fontB: normalizeFontDescriptor(source.fontB, DEFAULT_SETTINGS.fontB),
     fontSize: toFiniteNumber(source.fontSize, DEFAULT_SETTINGS.fontSize),
     sizeRatio: toFiniteNumber(source.sizeRatio, DEFAULT_SETTINGS.sizeRatio),
-    letterSpacingLatin: toFiniteNumber(source.letterSpacingLatin, DEFAULT_SETTINGS.letterSpacingLatin),
-    letterSpacingKanji: toFiniteNumber(source.letterSpacingKanji, DEFAULT_SETTINGS.letterSpacingKanji),
-    letterSpacingHiragana: toFiniteNumber(source.letterSpacingHiragana, DEFAULT_SETTINGS.letterSpacingHiragana),
-    letterSpacingKatakana: toFiniteNumber(source.letterSpacingKatakana, DEFAULT_SETTINGS.letterSpacingKatakana),
-    opticalSpacing:
-      typeof source.opticalSpacing === "boolean" ? source.opticalSpacing : DEFAULT_SETTINGS.opticalSpacing,
-    opticalIntensity: toFiniteNumber(source.opticalIntensity, DEFAULT_SETTINGS.opticalIntensity)
+    letterSpacingUnit: "em",
+    letterSpacingLatin: normalizeLetterSpacing(source.letterSpacingLatin, DEFAULT_SETTINGS.letterSpacingLatin),
+    letterSpacingKanji: normalizeLetterSpacing(source.letterSpacingKanji, DEFAULT_SETTINGS.letterSpacingKanji),
+    letterSpacingHiragana: normalizeLetterSpacing(
+      source.letterSpacingHiragana,
+      DEFAULT_SETTINGS.letterSpacingHiragana
+    ),
+    letterSpacingKatakana: normalizeLetterSpacing(
+      source.letterSpacingKatakana,
+      DEFAULT_SETTINGS.letterSpacingKatakana
+    )
   };
 }
 
@@ -628,16 +400,12 @@ async function applyFontMix(node: TextNode, settings: SavedSettings, newText?: s
     node.setRangeFontSize(range.start, range.end, range.script === "latin" ? settings.fontSize : japaneseSize);
   }
 
-  const tokens = buildCharacterTokens(text, settings, japaneseSize);
-  const spacing = tokens.map((token) => token.spacingBase);
-
-  if (settings.opticalSpacing) {
-    for (let i = 0; i < tokens.length - 1; i += 1) {
-      spacing[i] += getPairAdjustment(tokens[i], tokens[i + 1], settings.opticalIntensity);
-    }
-  }
-
-  applyBatchedLetterSpacing(node, tokens, spacing);
+  const tokens = buildCharacterTokens(text, settings);
+  applyBatchedLetterSpacing(
+    node,
+    tokens,
+    tokens.map((token) => token.spacingBase)
+  );
 }
 
 async function getSavedSettings(): Promise<SavedSettings | null> {
@@ -693,12 +461,12 @@ function getTextNodeCharacters(node: TextNode): string | null {
   }
 }
 
-function getLetterSpacingPercent(letterSpacing: LetterSpacing, fontSize: number): number {
+function getLetterSpacingEm(letterSpacing: LetterSpacing, fontSize: number): number {
   if (letterSpacing.unit === "PERCENT") {
-    return letterSpacing.value;
+    return letterSpacing.value / 100;
   }
   if (letterSpacing.unit === "PIXELS") {
-    return fontSize > 0 ? (letterSpacing.value / fontSize) * 100 : 0;
+    return fontSize > 0 ? letterSpacing.value / fontSize : 0;
   }
   return 0;
 }
@@ -774,7 +542,7 @@ function extractSettingsFromNode(node: TextNode): SavedSettings {
     const script: ScriptType = isWhitespace(codePoint) && index > 0 ? previousScript : classifyCharacter(codePoint);
     const segment = segmentForIndex(index);
     const fontSize = segment.fontSize;
-    const spacingValue = getLetterSpacingPercent(segment.letterSpacing, fontSize);
+    const spacingValue = getLetterSpacingEm(segment.letterSpacing, fontSize);
 
     if (script === "latin") {
       latinTokens.push({ fontName: segment.fontName, value: fontSize });
@@ -806,16 +574,15 @@ function extractSettingsFromNode(node: TextNode): SavedSettings {
     fontB,
     fontSize: roundSettingNumber(latinSize),
     sizeRatio: roundSettingNumber(sizeRatio),
-    letterSpacingLatin: roundSettingNumber(getAverageValue(latinSpacing, DEFAULT_SETTINGS.letterSpacingLatin)),
-    letterSpacingKanji: roundSettingNumber(getAverageValue(kanjiSpacing, DEFAULT_SETTINGS.letterSpacingKanji)),
-    letterSpacingHiragana: roundSettingNumber(
+    letterSpacingUnit: "em",
+    letterSpacingLatin: roundEmValue(getAverageValue(latinSpacing, DEFAULT_SETTINGS.letterSpacingLatin)),
+    letterSpacingKanji: roundEmValue(getAverageValue(kanjiSpacing, DEFAULT_SETTINGS.letterSpacingKanji)),
+    letterSpacingHiragana: roundEmValue(
       getAverageValue(hiraganaSpacing, DEFAULT_SETTINGS.letterSpacingHiragana)
     ),
-    letterSpacingKatakana: roundSettingNumber(
+    letterSpacingKatakana: roundEmValue(
       getAverageValue(katakanaSpacing, DEFAULT_SETTINGS.letterSpacingKatakana)
-    ),
-    opticalSpacing: false,
-    opticalIntensity: DEFAULT_SETTINGS.opticalIntensity
+    )
   });
 }
 
@@ -1080,6 +847,13 @@ figma.ui.onmessage = async (rawMessage: PluginMessage) => {
       case "delete-preset":
         await handleDeletePreset(rawMessage);
         break;
+      case "resize-ui": {
+        const requestedHeight = Number(rawMessage.height);
+        if (Number.isFinite(requestedHeight)) {
+          figma.ui.resize(PLUGIN_UI_WIDTH, Math.max(240, Math.min(1000, Math.round(requestedHeight))));
+        }
+        break;
+      }
       case "close":
         figma.closePlugin();
         break;

@@ -3,22 +3,25 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Codex Font Remixer</title>
+    <title>FontRemixer</title>
     <style>
       :root {
-        --text: #ffffff;
-        --muted: #b7b7b7;
-        --border: transparent;
-        --primary: #96aae6;
-        --apply-bg: #ff4506;
-        --apply-text: #121212;
-        --error: #f24822;
-        --success: #1bc47d;
-        --bg: #272727;
-        --field-bg: #313131;
-        --footer-bg: #272727;
-        --divider: #4a4a4a;
-        --slider-track: #5b5b5b;
+        color-scheme: dark;
+        --text: #f7f7f7;
+        --muted: #a9a9a9;
+        --border: #464646;
+        --focus: #a9b9f3;
+        --primary: #a9b9f3;
+        --apply-bg: #ff5b35;
+        --apply-hover: #ff704f;
+        --apply-text: #161616;
+        --error: #ff735f;
+        --success: #56d6a0;
+        --bg: #1f1f1f;
+        --field-bg: #2b2b2b;
+        --field-hover: #333333;
+        --footer-bg: #242424;
+        --divider: #3d3d3d;
       }
 
       * {
@@ -27,43 +30,58 @@
 
       html,
       body {
-        height: 100%;
+        min-height: 0;
         margin: 0;
         padding: 0;
         background: var(--bg);
         color: var(--text);
         font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
-        font-size: 11px;
-        overflow: hidden;
+        font-size: 12px;
+        line-height: 1.4;
+        overflow: visible;
+      }
+
+      ::selection {
+        background: rgba(169, 185, 243, 0.34);
+        color: var(--text);
       }
 
       .app {
-        height: 100vh;
+        height: auto;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
+        overflow: visible;
       }
 
       .content {
-        flex: 1 1 auto;
-        overflow-y: auto;
-        padding: 12px;
+        flex: 0 0 auto;
+        overflow: visible;
+        padding: 16px 14px 40px;
+        scrollbar-color: var(--border) transparent;
+        scrollbar-width: thin;
       }
 
-      h1 {
-        margin: 0 0 12px;
-        font-size: 14px;
-        font-weight: 700;
+      .content::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .content::-webkit-scrollbar-thumb {
+        border: 2px solid transparent;
+        border-radius: 99px;
+        background: var(--border);
+        background-clip: padding-box;
       }
 
       .section {
-        margin-bottom: 12px;
+        margin-bottom: 18px;
       }
 
       .label {
         display: block;
-        margin-bottom: 4px;
+        margin-bottom: 6px;
         color: var(--muted);
+        font-size: 11px;
+        font-weight: 500;
       }
 
       input[type="text"],
@@ -72,6 +90,8 @@
       textarea,
       button {
         width: 100%;
+        min-width: 0;
+        max-width: 100%;
         font: inherit;
       }
 
@@ -79,11 +99,16 @@
       input[type="number"],
       select,
       textarea {
-        padding: 6px;
-        border-radius: 6px;
-        border: 0;
+        min-height: 32px;
+        padding: 7px 9px;
+        border: 1px solid transparent;
+        border-radius: 7px;
         background: var(--field-bg);
         color: var(--text);
+        font-variant-numeric: tabular-nums;
+        transition:
+          background 120ms ease,
+          border-color 120ms ease;
       }
 
       textarea {
@@ -91,19 +116,44 @@
       }
 
       button {
-        border: 0;
+        min-height: 32px;
+        border: 1px solid transparent;
         background: var(--field-bg);
         color: var(--text);
-        border-radius: 6px;
-        padding: 6px;
+        border-radius: 7px;
+        padding: 7px 9px;
         cursor: pointer;
+        transition:
+          background 120ms ease,
+          border-color 120ms ease,
+          color 120ms ease;
+      }
+
+      button:hover:not(:disabled),
+      input[type="text"]:hover,
+      input[type="number"]:hover,
+      select:hover,
+      textarea:hover {
+        background: var(--field-hover);
+      }
+
+      button:focus-visible,
+      input:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible {
+        border-color: var(--focus);
+        outline: 2px solid rgba(169, 185, 243, 0.26);
+        outline-offset: 1px;
       }
 
       button.primary {
-        border-color: #d43d00;
         background: var(--apply-bg);
         color: var(--apply-text);
-        font-weight: 600;
+        font-weight: 650;
+      }
+
+      button.primary:hover:not(:disabled) {
+        background: var(--apply-hover);
       }
 
       button:disabled {
@@ -113,66 +163,225 @@
 
       input::placeholder,
       textarea::placeholder {
-        color: var(--muted);
-      }
-
-      input[type="range"] {
-        width: 100%;
-        margin: 0;
-        appearance: none;
-        background: transparent;
-      }
-
-      input[type="range"]::-webkit-slider-runnable-track {
-        height: 6px;
-        border-radius: 999px;
-        background: var(--slider-track);
-      }
-
-      input[type="range"]::-webkit-slider-thumb {
-        appearance: none;
-        width: 18px;
-        height: 18px;
-        margin-top: -6px;
-        border-radius: 50%;
-        border: 0;
-        background: var(--primary);
-      }
-
-      input[type="range"]::-moz-range-track {
-        height: 6px;
-        border-radius: 999px;
-        border: 0;
-        background: var(--slider-track);
-      }
-
-      input[type="range"]::-moz-range-thumb {
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        border: 0;
-        background: var(--primary);
+        color: #929292;
       }
 
       .row {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 6px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 8px;
       }
 
-      .field-with-label {
+      .spacing-field {
         display: flex;
-        align-items: center;
-        gap: 6px;
+        min-width: 0;
+        flex-direction: column;
+        gap: 5px;
       }
 
-      .field-with-label span {
-        min-width: 58px;
+      .spacing-field > label {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .unit-suffix {
+        position: absolute;
+        top: 50%;
+        right: 34px;
+        transform: translateY(-50%);
+        color: #8f8f8f;
+        font-size: 10px;
+        line-height: 1;
+        pointer-events: none;
+      }
+
+      .size-controls-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 10px;
+      }
+
+      .number-control {
+        min-width: 0;
+      }
+
+      .number-combobox {
+        position: relative;
+        display: flex;
+        min-width: 0;
+      }
+
+      .number-combobox input {
+        padding-right: 55px;
+      }
+
+      .number-trigger {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 28px;
+        min-width: 28px;
+        height: 32px;
+        min-height: 32px;
+        padding: 0;
+        border-radius: 0 7px 7px 0;
+        background: transparent;
         color: var(--muted);
       }
 
-      .field-with-label input {
-        width: 100%;
+      .number-trigger:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text);
+      }
+
+      .number-trigger svg {
+        width: 12px;
+        height: 12px;
+        transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .number-trigger[aria-expanded="true"] svg {
+        transform: rotate(180deg);
+      }
+
+      .number-menu-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        pointer-events: none;
+      }
+
+      .number-menu {
+        position: fixed;
+        width: 128px;
+        max-height: 264px;
+        overflow-y: auto;
+        padding: 4px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #252525;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
+        pointer-events: auto;
+        scrollbar-color: var(--border) transparent;
+        scrollbar-width: thin;
+      }
+
+      .number-option {
+        display: grid;
+        grid-template-columns: 14px minmax(0, 1fr);
+        align-items: center;
+        gap: 6px;
+        min-height: 28px;
+        padding: 5px 7px;
+        border-radius: 6px;
+        background: transparent;
+        text-align: left;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .number-option:hover,
+      .number-option.active {
+        background: var(--field-hover);
+      }
+
+      .option-check {
+        width: 12px;
+        height: 12px;
+        opacity: 0;
+      }
+
+      .number-option[aria-selected="true"] .option-check {
+        opacity: 1;
+      }
+
+      .number-menu-separator {
+        height: 1px;
+        margin: 4px 3px;
+        background: var(--divider);
+      }
+
+      .letter-spacing-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .letter-spacing-grid input {
+        height: 30px;
+        min-height: 30px;
+        padding: 7px 5px 7px 25px;
+        border: 0;
+        background: transparent;
+        text-align: left;
+      }
+
+      .letter-spacing-grid input:hover,
+      .letter-spacing-grid input:focus-visible {
+        border-color: transparent;
+        background: transparent;
+        outline: 0;
+      }
+
+      .spacing-input-wrap {
+        position: relative;
+        display: flex;
+        min-width: 0;
+        min-height: 32px;
+        align-items: center;
+        border: 1px solid transparent;
+        border-radius: 7px;
+        background: var(--field-bg);
+        transition:
+          background 120ms ease,
+          border-color 120ms ease;
+      }
+
+      .spacing-input-wrap:hover {
+        background: var(--field-hover);
+      }
+
+      .spacing-input-wrap:focus-within {
+        border-color: var(--focus);
+        outline: 2px solid rgba(169, 185, 243, 0.26);
+        outline-offset: 1px;
+      }
+
+      .spacing-scrubber {
+        position: absolute;
+        z-index: 1;
+        left: 3px;
+        width: 20px;
+        min-width: 20px;
+        height: 28px;
+        min-height: 28px;
+        padding: 0;
+        border: 0;
+        border-radius: 5px;
+        background: transparent;
+        color: #9b9b9b;
+        cursor: ew-resize;
+        touch-action: none;
+        user-select: none;
+      }
+
+      .spacing-scrubber:hover:not(:disabled),
+      .spacing-scrubber:focus-visible {
+        border-color: transparent;
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        outline: 0;
+      }
+
+      .spacing-scrubber svg {
+        width: 14px;
+        height: 14px;
+        pointer-events: none;
+      }
+
+      body.is-scrubbing,
+      body.is-scrubbing * {
+        cursor: ew-resize !important;
+        user-select: none !important;
       }
 
       .preset-picker-row {
@@ -200,19 +409,7 @@
       .icon-button.active {
         border-color: var(--primary);
         color: var(--primary);
-        background: #f7faff;
-      }
-
-      .button-with-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-      }
-
-      .button-with-icon svg {
-        width: 14px;
-        height: 14px;
+        background: rgba(169, 185, 243, 0.1);
       }
 
       .row-3 {
@@ -222,7 +419,7 @@
       }
 
       .inline {
-        margin-top: 6px;
+        margin-top: 8px;
       }
 
       .hidden {
@@ -230,9 +427,9 @@
       }
 
       .font-results {
-        margin-top: 4px;
-        border: 0;
-        border-radius: 6px;
+        margin-top: 5px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
         max-height: 150px;
         overflow: auto;
         background: var(--field-bg);
@@ -253,66 +450,15 @@
       }
 
       .font-item:hover {
-        background: #3a3a3a;
-      }
-
-      .slider-row {
-        display: grid;
-        grid-template-columns: minmax(0, 4fr) minmax(56px, 1fr);
-        gap: 8px;
-        align-items: center;
-      }
-
-      .toggle-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      .switch {
-        position: relative;
-        width: 32px;
-        height: 18px;
-      }
-
-      .switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-      }
-
-      .switch-track {
-        position: absolute;
-        inset: 0;
-        border-radius: 99px;
-        background: var(--slider-track);
-        transition: background 0.15s ease;
-      }
-
-      .switch-track::before {
-        content: "";
-        position: absolute;
-        width: 14px;
-        height: 14px;
-        top: 2px;
-        left: 2px;
-        border-radius: 50%;
-        background: #ffffff;
-        transition: transform 0.15s ease;
-      }
-
-      .switch input:checked + .switch-track {
-        background: var(--primary);
-      }
-
-      .switch input:checked + .switch-track::before {
-        transform: translateX(14px);
+        background: var(--field-hover);
       }
 
       #status {
-        min-height: 28px;
+        min-height: 34px;
+        max-height: 34px;
         color: #cfcfcf;
         line-height: 1.35;
+        overflow: hidden;
       }
 
       #status.error {
@@ -324,19 +470,19 @@
       }
 
       .footer-bar {
-        flex: 0 0 112px;
-        height: 112px;
-        padding: 10px 12px 12px;
+        flex: 0 0 auto;
+        height: auto;
+        padding: 10px 14px 12px;
         background: var(--footer-bg);
-        border-top: 1px solid var(--footer-bg);
-        display: grid;
-        grid-template-rows: 28px 1fr;
-        gap: 8px;
+        border-top: 1px solid var(--divider);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
       }
 
       .footer-bar button {
         display: block;
-        min-height: 54px;
+        min-height: 44px;
       }
 
       .hint {
@@ -347,14 +493,10 @@
       }
 
       .section-heading {
-        margin: 0 0 8px;
+        margin: 0;
         color: var(--text);
         font-size: 12px;
-        font-weight: 600;
-      }
-
-      .experimental-tag {
-        color: #f5c142;
+        font-weight: 650;
       }
 
       .section-heading-row {
@@ -365,9 +507,15 @@
         margin-bottom: 8px;
       }
 
+      .section-meta {
+        color: var(--muted);
+        font-size: 10px;
+        font-variant-numeric: tabular-nums;
+      }
+
       .font-selection-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         gap: 10px;
       }
 
@@ -380,35 +528,32 @@
       }
 
       .section-divider {
-        padding-top: 12px;
+        padding-top: 18px;
         border-top: 1px solid var(--divider);
       }
 
-      .font-size-row {
-        display: grid;
-        grid-template-columns: minmax(0, 4fr) minmax(56px, 1fr);
-        gap: 8px;
-        align-items: center;
+      .content > .section:last-child {
+        margin-bottom: 0;
       }
+
     </style>
   </head>
   <body>
-    <div class="app">
+    <div id="app" class="app">
       <div class="content">
-        <h1>Codex Font Remixer</h1>
 
         <section class="section">
           <label class="label" for="presetSelect">Presets</label>
           <div class="preset-picker-row">
             <select id="presetSelect"></select>
-            <button id="savePresetButton" type="button" class="icon-button" title="Save preset">
+            <button id="savePresetButton" type="button" class="icon-button" title="Save preset" aria-label="Save preset">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M5 4h11l3 3v13H5z"></path>
                 <path d="M8 4v6h8V4"></path>
                 <path d="M8 20v-6h8v6"></path>
               </svg>
             </button>
-            <button id="choosePresetFolderButton" type="button" class="icon-button" title="Reload saved presets">
+            <button id="choosePresetFolderButton" type="button" class="icon-button" title="Reload saved presets" aria-label="Reload saved presets">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="8"></circle>
                 <circle cx="12" cy="12" r="2.25"></circle>
@@ -443,8 +588,8 @@
 
         <section class="section">
           <div class="section-heading-row">
-            <div class="section-heading">Font Selection</div>
-            <button id="extractButton" type="button" class="icon-button" title="Extract from selected text">
+            <div class="section-heading">Font selection</div>
+            <button id="extractButton" type="button" class="icon-button" title="Extract from selected text" aria-label="Extract settings from selected text">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M14 4l6 6"></path>
                 <path d="M7 21l-4-4 10.5-10.5 4 4z"></path>
@@ -470,64 +615,133 @@
         </section>
 
         <section class="section section-divider">
-          <label class="label" for="fontSize">Font Size</label>
-          <div class="font-size-row">
-            <input id="fontSizeSlider" type="range" min="1" max="420" value="16" />
-            <input id="fontSize" type="number" value="16" min="1" step="1" />
+          <div class="size-controls-grid">
+            <div class="number-control">
+              <label class="label" for="fontSize">Font size</label>
+              <div class="number-combobox">
+                <input
+                  id="fontSize"
+                  type="text"
+                  value="16"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  role="combobox"
+                  aria-autocomplete="none"
+                  aria-label="Font size in pixels"
+                  aria-expanded="false"
+                  aria-controls="fontSizeMenu"
+                />
+                <span class="unit-suffix">px</span>
+                <button
+                  id="fontSizeTrigger"
+                  type="button"
+                  class="number-trigger"
+                  aria-label="Open font size presets"
+                  aria-expanded="false"
+                  aria-controls="fontSizeMenu"
+                  tabindex="-1"
+                >
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <path d="m4 6 4 4 4-4"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="number-control">
+              <label class="label" for="sizeRatioField">Size difference</label>
+              <div class="number-combobox">
+                <input
+                  id="sizeRatioField"
+                  type="text"
+                  value="0"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  role="combobox"
+                  aria-autocomplete="none"
+                  aria-label="Size difference in percent"
+                  aria-expanded="false"
+                  aria-controls="sizeDifferenceMenu"
+                />
+                <span class="unit-suffix">%</span>
+                <button
+                  id="sizeDifferenceTrigger"
+                  type="button"
+                  class="number-trigger"
+                  aria-label="Open size difference presets"
+                  aria-expanded="false"
+                  aria-controls="sizeDifferenceMenu"
+                  tabindex="-1"
+                >
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                    <path d="m4 6 4 4 4-4"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section class="section">
-          <label class="label" for="sizeRatio">Size Ratio</label>
-          <div class="slider-row">
-            <input id="sizeRatio" type="range" min="-30" max="30" value="0" />
-            <input id="sizeRatioField" type="number" min="-30" max="30" step="1" value="0" />
+        <section class="section section-divider" aria-labelledby="letterSpacingHeading">
+          <div class="section-heading-row">
+            <div id="letterSpacingHeading" class="section-heading">Letter spacing</div>
+            <span class="section-meta">em units</span>
           </div>
-        </section>
-
-        <section class="section">
-          <label class="label">Letter Spacing (%)</label>
-          <div class="row">
-            <label class="field-with-label">
-              <span>Latin</span>
-              <input id="spacingLatin" type="number" step="0.1" value="0" />
-            </label>
-            <label class="field-with-label">
-              <span>Kanji</span>
-              <input id="spacingKanji" type="number" step="0.1" value="0" />
-            </label>
-          </div>
-          <div class="row inline">
-            <label class="field-with-label">
-              <span>Hiragana</span>
-              <input id="spacingHiragana" type="number" step="0.1" value="0" />
-            </label>
-            <label class="field-with-label">
-              <span>Katakana</span>
-              <input id="spacingKatakana" type="number" step="0.1" value="0" />
-            </label>
-          </div>
-        </section>
-
-        <section class="section">
-          <div class="toggle-row">
-            <span class="label" style="margin: 0">Optical Spacing <span class="experimental-tag">(Experimental!)</span></span>
-            <label class="switch">
-              <input id="opticalSpacing" type="checkbox" />
-              <span class="switch-track"></span>
-            </label>
-          </div>
-          <div id="opticalIntensityWrap" class="slider-row hidden inline">
-            <input id="opticalIntensity" type="range" min="0" max="100" value="100" />
-            <input id="opticalIntensityField" type="number" min="0" max="100" step="1" value="100" />
+          <div class="letter-spacing-grid">
+            <div class="spacing-field">
+              <label for="spacingLatin">Latin</label>
+              <div class="spacing-input-wrap">
+                <button class="spacing-scrubber" type="button" data-input="spacingLatin" aria-label="Drag to adjust Latin letter spacing" title="Drag left or right to adjust">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2.5 3v10M13.5 3v10M5.5 12l2.5-8 2.5 8M6.4 9.2h3.2"></path>
+                  </svg>
+                </button>
+                <input id="spacingLatin" type="text" value="0" inputmode="decimal" autocomplete="off" aria-label="Latin letter spacing in em" />
+              </div>
+            </div>
+            <div class="spacing-field">
+              <label for="spacingKanji">Kanji</label>
+              <div class="spacing-input-wrap">
+                <button class="spacing-scrubber" type="button" data-input="spacingKanji" aria-label="Drag to adjust Kanji letter spacing" title="Drag left or right to adjust">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2.5 3v10M13.5 3v10M5.5 12l2.5-8 2.5 8M6.4 9.2h3.2"></path>
+                  </svg>
+                </button>
+                <input id="spacingKanji" type="text" value="0" inputmode="decimal" autocomplete="off" aria-label="Kanji letter spacing in em" />
+              </div>
+            </div>
+            <div class="spacing-field">
+              <label for="spacingHiragana">Hiragana</label>
+              <div class="spacing-input-wrap">
+                <button class="spacing-scrubber" type="button" data-input="spacingHiragana" aria-label="Drag to adjust Hiragana letter spacing" title="Drag left or right to adjust">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2.5 3v10M13.5 3v10M5.5 12l2.5-8 2.5 8M6.4 9.2h3.2"></path>
+                  </svg>
+                </button>
+                <input id="spacingHiragana" type="text" value="0" inputmode="decimal" autocomplete="off" aria-label="Hiragana letter spacing in em" />
+              </div>
+            </div>
+            <div class="spacing-field">
+              <label for="spacingKatakana">Katakana</label>
+              <div class="spacing-input-wrap">
+                <button class="spacing-scrubber" type="button" data-input="spacingKatakana" aria-label="Drag to adjust Katakana letter spacing" title="Drag left or right to adjust">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2.5 3v10M13.5 3v10M5.5 12l2.5-8 2.5 8M6.4 9.2h3.2"></path>
+                  </svg>
+                </button>
+                <input id="spacingKatakana" type="text" value="0" inputmode="decimal" autocomplete="off" aria-label="Katakana letter spacing in em" />
+              </div>
+            </div>
           </div>
         </section>
       </div>
 
       <div class="footer-bar">
-        <div id="status"></div>
+        <div id="status" role="status" aria-live="polite"></div>
         <button id="applyButton" type="button" class="primary">Apply</button>
       </div>
+
+      <div id="numberMenuLayer" class="number-menu-layer" aria-hidden="true"></div>
     </div>
 
     <script>
@@ -536,6 +750,8 @@
       const DEVICE_DB_NAME = "codex-font-remixer";
       const DEVICE_DB_STORE = "storage";
       const DEVICE_STORAGE_PROBE_KEY = "__codex-font-remixer-probe__";
+      const FONT_SIZE_PRESETS = [10, 11, 12, 13, 14, 15, 16, 20, 24, 32, 36, 40, 48, 64, 72, 96, 128];
+      const SIZE_DIFFERENCE_PRESETS = [-30, -20, -15, -10, -8, -5, 0, 5, 8, 10, 15, 20, 30];
       const BUILTIN_PRESETS = [
         {
           id: "builtin-rs-regular-40",
@@ -546,12 +762,11 @@
             fontB: { family: "M PLUS 1p", style: "Regular" },
             fontSize: 40,
             sizeRatio: -8,
-            letterSpacingLatin: -5,
+            letterSpacingUnit: "em",
+            letterSpacingLatin: -0.05,
             letterSpacingKanji: 0,
-            letterSpacingHiragana: -2,
-            letterSpacingKatakana: -2,
-            opticalSpacing: false,
-            opticalIntensity: 100
+            letterSpacingHiragana: -0.02,
+            letterSpacingKatakana: -0.02
           }
         },
         {
@@ -563,12 +778,11 @@
             fontB: { family: "M PLUS 1p", style: "Bold" },
             fontSize: 40,
             sizeRatio: -8,
-            letterSpacingLatin: -5,
+            letterSpacingUnit: "em",
+            letterSpacingLatin: -0.05,
             letterSpacingKanji: 0,
-            letterSpacingHiragana: -2,
-            letterSpacingKatakana: -2,
-            opticalSpacing: false,
-            opticalIntensity: 100
+            letterSpacingHiragana: -0.02,
+            letterSpacingKatakana: -0.02
           }
         },
         {
@@ -580,12 +794,11 @@
             fontB: { family: "Tazugane Gothic StdN", style: "Black" },
             fontSize: 40,
             sizeRatio: -10,
-            letterSpacingLatin: -1,
+            letterSpacingUnit: "em",
+            letterSpacingLatin: -0.01,
             letterSpacingKanji: 0,
-            letterSpacingHiragana: -5,
-            letterSpacingKatakana: -5,
-            opticalSpacing: true,
-            opticalIntensity: 100
+            letterSpacingHiragana: -0.05,
+            letterSpacingKatakana: -0.05
           }
         },
         {
@@ -597,12 +810,11 @@
             fontB: { family: "Tazugane Gothic StdN", style: "Regular" },
             fontSize: 40,
             sizeRatio: -10,
-            letterSpacingLatin: -1,
+            letterSpacingUnit: "em",
+            letterSpacingLatin: -0.01,
             letterSpacingKanji: 0,
-            letterSpacingHiragana: -5,
-            letterSpacingKatakana: -5,
-            opticalSpacing: true,
-            opticalIntensity: 100
+            letterSpacingHiragana: -0.05,
+            letterSpacingKatakana: -0.05
           }
         },
         {
@@ -614,12 +826,11 @@
             fontB: { family: "Tazugane Gothic StdN", style: "Light" },
             fontSize: 40,
             sizeRatio: -10,
-            letterSpacingLatin: -1,
+            letterSpacingUnit: "em",
+            letterSpacingLatin: -0.01,
             letterSpacingKanji: 0,
-            letterSpacingHiragana: -5,
-            letterSpacingKatakana: -5,
-            opticalSpacing: true,
-            opticalIntensity: 100
+            letterSpacingHiragana: -0.05,
+            letterSpacingKatakana: -0.05
           }
         },
         {
@@ -631,12 +842,11 @@
             fontB: { family: "FOT-NewCezanne ProN", style: "M" },
             fontSize: 40,
             sizeRatio: -8,
-            letterSpacingLatin: 2.8,
-            letterSpacingKanji: 2,
-            letterSpacingHiragana: 3,
-            letterSpacingKatakana: 3,
-            opticalSpacing: false,
-            opticalIntensity: 100
+            letterSpacingUnit: "em",
+            letterSpacingLatin: 0.03,
+            letterSpacingKanji: 0.02,
+            letterSpacingHiragana: 0.03,
+            letterSpacingKatakana: 0.03
           }
         },
         {
@@ -648,12 +858,11 @@
             fontB: { family: "FOT-NewCezanne ProN", style: "B" },
             fontSize: 40,
             sizeRatio: -8,
-            letterSpacingLatin: 2.8,
-            letterSpacingKanji: 2,
-            letterSpacingHiragana: 3,
-            letterSpacingKatakana: 3,
-            opticalSpacing: false,
-            opticalIntensity: 100
+            letterSpacingUnit: "em",
+            letterSpacingLatin: 0.03,
+            letterSpacingKanji: 0.02,
+            letterSpacingHiragana: 0.03,
+            letterSpacingKatakana: 0.03
           }
         }
       ];
@@ -675,15 +884,403 @@
         parent.postMessage({ pluginMessage: message }, "*");
       }
 
+      let resizeFrame = 0;
+      let lastRequestedHeight = 0;
+
+      function requestUiResize() {
+        if (resizeFrame) {
+          return;
+        }
+        resizeFrame = requestAnimationFrame(() => {
+          resizeFrame = 0;
+          const height = Math.ceil(el("app").getBoundingClientRect().height);
+          if (height > 0 && Math.abs(height - lastRequestedHeight) >= 1) {
+            lastRequestedHeight = height;
+            post({ type: "resize-ui", height });
+          }
+        });
+      }
+
       function setStatus(message, kind) {
         const status = el("status");
         status.textContent = message || "";
+        status.title = message || "";
         status.className = kind ? kind : "";
       }
 
       function toNumber(value, fallback) {
         const parsed = Number(value);
         return Number.isFinite(parsed) ? parsed : fallback;
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function formatNumber(value, maxDecimals) {
+        const rounded = Number(Number(value).toFixed(maxDecimals));
+        return Number.isFinite(rounded) ? String(rounded) : "0";
+      }
+
+      function roundLetterSpacing(value) {
+        return Number(clamp(toNumber(value, 0), -0.5, 1).toFixed(2));
+      }
+
+      function normalizeLetterSpacingField(input) {
+        input.value = formatNumber(roundLetterSpacing(input.value), 2);
+      }
+
+      function limitDecimalInput(input, maxDecimals) {
+        const rawValue = input.value.replace(",", ".");
+        const isNegative = rawValue.startsWith("-");
+        const unsignedValue = rawValue.replace(/-/g, "");
+        const decimalIndex = unsignedValue.indexOf(".");
+        const whole = (decimalIndex >= 0 ? unsignedValue.slice(0, decimalIndex) : unsignedValue).replace(/\D/g, "");
+        const fraction =
+          decimalIndex >= 0
+            ? unsignedValue
+                .slice(decimalIndex + 1)
+                .replace(/\D/g, "")
+                .slice(0, maxDecimals)
+            : "";
+        input.value = `${isNegative ? "-" : ""}${whole}${decimalIndex >= 0 ? `.${fraction}` : ""}`;
+      }
+
+      function createSpacingScrubber(button) {
+        const input = el(button.dataset.input);
+        const step = 0.01;
+        const pixelsPerStep = 4;
+        const dragThreshold = 2;
+        let pointerId = null;
+        let startX = 0;
+        let startValue = 0;
+        let startText = "0";
+        let dragged = false;
+
+        function setValue(value) {
+          input.value = formatNumber(roundLetterSpacing(value), 2);
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+
+        function finish(options) {
+          if (pointerId == null) {
+            return;
+          }
+          const activePointerId = pointerId;
+          pointerId = null;
+          document.body.classList.remove("is-scrubbing");
+          window.removeEventListener("keydown", onWindowKeyDown);
+          window.removeEventListener("blur", onWindowBlur);
+          if (button.hasPointerCapture(activePointerId)) {
+            button.releasePointerCapture(activePointerId);
+          }
+          if (options && options.cancel) {
+            input.value = startText;
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            return;
+          }
+          if (dragged) {
+            normalizeLetterSpacingField(input);
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+          } else {
+            input.focus();
+            input.select();
+          }
+        }
+
+        function onWindowKeyDown(event) {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            finish({ cancel: true });
+          }
+        }
+
+        function onWindowBlur() {
+          finish({ cancel: false });
+        }
+
+        button.addEventListener("pointerdown", (event) => {
+          if (!event.isPrimary || event.button !== 0) {
+            return;
+          }
+          event.preventDefault();
+          pointerId = event.pointerId;
+          startX = event.clientX;
+          startValue = roundLetterSpacing(input.value);
+          startText = input.value;
+          dragged = false;
+          button.setPointerCapture(pointerId);
+          document.body.classList.add("is-scrubbing");
+          window.addEventListener("keydown", onWindowKeyDown);
+          window.addEventListener("blur", onWindowBlur);
+        });
+
+        button.addEventListener("pointermove", (event) => {
+          if (event.pointerId !== pointerId) {
+            return;
+          }
+          const delta = event.clientX - startX;
+          if (!dragged && Math.abs(delta) < dragThreshold) {
+            return;
+          }
+          dragged = true;
+          const steps = Math.round(delta / pixelsPerStep);
+          setValue(startValue + steps * step);
+        });
+
+        button.addEventListener("pointerup", (event) => {
+          if (event.pointerId === pointerId) {
+            finish({ cancel: false });
+          }
+        });
+
+        button.addEventListener("pointercancel", (event) => {
+          if (event.pointerId === pointerId) {
+            finish({ cancel: true });
+          }
+        });
+
+        button.addEventListener("lostpointercapture", () => {
+          if (pointerId != null) {
+            finish({ cancel: false });
+          }
+        });
+
+        button.addEventListener("keydown", (event) => {
+          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+            return;
+          }
+          event.preventDefault();
+          const direction = event.key === "ArrowRight" ? 1 : -1;
+          const keyboardStep = event.shiftKey ? 0.1 : step;
+          setValue(roundLetterSpacing(input.value) + direction * keyboardStep);
+          normalizeLetterSpacingField(input);
+          input.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+      }
+
+      function createEditableNumberDropdown(config) {
+        const input = el(config.inputId);
+        const trigger = el(config.triggerId);
+        const layer = el("numberMenuLayer");
+        let menu = null;
+        let values = [];
+        let activeIndex = -1;
+
+        function normalizedValue() {
+          return clamp(toNumber(input.value, config.fallback), config.min, config.max);
+        }
+
+        function commitValue(value) {
+          input.value = formatNumber(clamp(value, config.min, config.max), config.decimals);
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+
+        function setExpanded(expanded) {
+          input.setAttribute("aria-expanded", String(expanded));
+          trigger.setAttribute("aria-expanded", String(expanded));
+          layer.setAttribute("aria-hidden", String(!expanded));
+        }
+
+        function closeMenu(options) {
+          if (!menu) {
+            return;
+          }
+          menu.remove();
+          menu = null;
+          values = [];
+          activeIndex = -1;
+          input.removeAttribute("aria-activedescendant");
+          setExpanded(false);
+          if (options && options.restoreFocus) {
+            input.focus();
+          }
+        }
+
+        function setActive(index) {
+          if (!menu || !values.length) {
+            return;
+          }
+          activeIndex = (index + values.length) % values.length;
+          menu.querySelectorAll(".number-option").forEach((option, optionIndex) => {
+            option.classList.toggle("active", optionIndex === activeIndex);
+          });
+          const activeOption = menu.querySelectorAll(".number-option")[activeIndex];
+          if (activeOption) {
+            input.setAttribute("aria-activedescendant", activeOption.id);
+            activeOption.scrollIntoView({ block: "nearest" });
+          }
+        }
+
+        function chooseActive() {
+          if (activeIndex < 0 || activeIndex >= values.length) {
+            return;
+          }
+          commitValue(values[activeIndex]);
+          closeMenu({ restoreFocus: true });
+        }
+
+        function renderOption(value, selected, index) {
+          const option = document.createElement("div");
+          option.id = `${config.menuId}-option-${index}`;
+          option.className = "number-option";
+          option.setAttribute("role", "option");
+          option.setAttribute("aria-selected", String(selected));
+          option.dataset.index = String(index);
+          option.innerHTML = `
+            <svg class="option-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="m3 8 3 3 7-7"></path>
+            </svg>
+            <span>${formatNumber(value, config.decimals)}</span>
+          `;
+          return option;
+        }
+
+        function positionMenu() {
+          if (!menu) {
+            return;
+          }
+          const controlRect = input.parentElement.getBoundingClientRect();
+          const footerTop = document.querySelector(".footer-bar").getBoundingClientRect().top;
+          const width = Math.max(128, controlRect.width);
+          const left = clamp(controlRect.left, 8, window.innerWidth - width - 8);
+          const lowerBoundary = Math.min(footerTop, window.innerHeight - 8);
+          const spaceBelow = Math.max(0, lowerBoundary - controlRect.bottom - 4);
+          const spaceAbove = Math.max(0, controlRect.top - 8);
+          const naturalHeight = Math.min(264, menu.scrollHeight);
+          const openBelow = spaceBelow >= Math.min(144, naturalHeight) || spaceBelow >= spaceAbove;
+          const availableHeight = openBelow ? spaceBelow : spaceAbove;
+          if (availableHeight < 40) {
+            closeMenu();
+            return;
+          }
+          const height = Math.min(naturalHeight, availableHeight);
+          const rawTop = openBelow ? controlRect.bottom + 4 : controlRect.top - height - 4;
+          const top = clamp(rawTop, 8, Math.max(8, lowerBoundary - height));
+
+          menu.style.width = `${width}px`;
+          menu.style.maxHeight = `${height}px`;
+          menu.style.left = `${left}px`;
+          menu.style.top = `${top}px`;
+        }
+
+        function openMenu() {
+          if (menu) {
+            return;
+          }
+
+          document.dispatchEvent(new CustomEvent("number-menu-opening", { detail: config.inputId }));
+          const current = normalizedValue();
+          const presetValues = config.values.filter((value) => value >= config.min && value <= config.max);
+          const hasCurrentPreset = presetValues.some((value) => Math.abs(value - current) < 0.0001);
+          values = hasCurrentPreset ? presetValues.slice() : [current].concat(presetValues);
+
+          menu = document.createElement("div");
+          menu.id = config.menuId;
+          menu.className = "number-menu";
+          menu.setAttribute("role", "listbox");
+          menu.setAttribute("aria-label", config.menuLabel);
+          values.forEach((value, index) => {
+            menu.appendChild(renderOption(value, Math.abs(value - current) < 0.0001, index));
+            if (!hasCurrentPreset && index === 0) {
+              const separator = document.createElement("div");
+              separator.className = "number-menu-separator";
+              separator.setAttribute("role", "separator");
+              menu.appendChild(separator);
+            }
+          });
+
+          layer.appendChild(menu);
+          setExpanded(true);
+          positionMenu();
+          activeIndex = values.findIndex((value) => Math.abs(value - current) < 0.0001);
+          setActive(activeIndex >= 0 ? activeIndex : 0);
+        }
+
+        trigger.addEventListener("click", () => {
+          input.focus();
+          if (menu) {
+            closeMenu({ restoreFocus: true });
+          } else {
+            openMenu();
+          }
+        });
+
+        input.addEventListener("keydown", (event) => {
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            if (!menu) {
+              openMenu();
+            } else {
+              setActive(activeIndex + 1);
+            }
+            return;
+          }
+          if (event.key === "ArrowUp" && menu) {
+            event.preventDefault();
+            setActive(activeIndex - 1);
+            return;
+          }
+          if (event.key === "Enter" && menu) {
+            event.preventDefault();
+            chooseActive();
+            return;
+          }
+          if (event.key === "Escape" && menu) {
+            event.preventDefault();
+            closeMenu({ restoreFocus: true });
+            return;
+          }
+          if (event.key === "Tab") {
+            closeMenu();
+          }
+        });
+
+        input.addEventListener("input", () => {
+          limitDecimalInput(input, config.decimals);
+        });
+
+        input.addEventListener("blur", () => {
+          if (!menu) {
+            commitValue(normalizedValue());
+          }
+        });
+
+        layer.addEventListener("mousedown", (event) => {
+          if (!menu) {
+            return;
+          }
+          const option = event.target.closest(".number-option");
+          if (!option || !menu.contains(option)) {
+            return;
+          }
+          event.preventDefault();
+          activeIndex = Number(option.dataset.index);
+          chooseActive();
+        });
+
+        document.addEventListener("number-menu-opening", (event) => {
+          if (event.detail !== config.inputId) {
+            closeMenu();
+          }
+        });
+
+        document.addEventListener("mousedown", (event) => {
+          if (!menu || input.parentElement.contains(event.target) || menu.contains(event.target)) {
+            return;
+          }
+          closeMenu();
+        });
+
+        window.addEventListener("resize", positionMenu);
+        document.querySelector(".content").addEventListener("scroll", positionMenu, { passive: true });
+
+        return {
+          setValue(value) {
+            commitValue(value);
+          },
+          close: closeMenu
+        };
       }
 
       function normalizeFontKey(value) {
@@ -694,6 +1291,29 @@
 
       function createPresetId() {
         return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      }
+
+      function normalizeSettingsRecord(value) {
+        if (!value || typeof value !== "object") {
+          return {};
+        }
+
+        const normalized = { ...value, letterSpacingUnit: "em" };
+        const sourceUsesEm = value.letterSpacingUnit === "em";
+        [
+          "letterSpacingLatin",
+          "letterSpacingKanji",
+          "letterSpacingHiragana",
+          "letterSpacingKatakana"
+        ].forEach((key) => {
+          if (value[key] == null) {
+            return;
+          }
+          const numericValue = toNumber(value[key], 0);
+          const emValue = sourceUsesEm ? numericValue : numericValue / 100;
+          normalized[key] = roundLetterSpacing(emValue);
+        });
+        return normalized;
       }
 
       function normalizePresetRecord(value) {
@@ -707,13 +1327,16 @@
           id: value.id,
           name: value.name,
           builtIn: Boolean(value.builtIn),
-          settings: value.settings && typeof value.settings === "object" ? value.settings : {}
+          settings: normalizeSettingsRecord(value.settings)
         };
       }
 
       function mergeBuiltInPresets(presets) {
         const builtInIds = new Set(BUILTIN_PRESETS.map((preset) => preset.id));
-        const customPresets = presets.filter((preset) => !builtInIds.has(preset.id));
+        const customPresets = presets
+          .map(normalizePresetRecord)
+          .filter(Boolean)
+          .filter((preset) => !builtInIds.has(preset.id));
         return BUILTIN_PRESETS.concat(customPresets);
       }
 
@@ -853,7 +1476,7 @@
 
       async function loadLocalSettings() {
         const parsed = await readDeviceJson(LOCAL_SETTINGS_KEY);
-        return parsed && typeof parsed === "object" ? parsed : null;
+        return parsed && typeof parsed === "object" ? normalizeSettingsRecord(parsed) : null;
       }
 
       async function saveLocalSettings(settings) {
@@ -900,46 +1523,6 @@
         }
 
         status.textContent = "Checking preset storage...";
-      }
-
-      function updateRatioLabels() {
-        el("sizeRatioField").value = el("sizeRatio").value;
-        el("opticalIntensityField").value = el("opticalIntensity").value;
-      }
-
-      function syncFontSizeSliderFromInput() {
-        const value = toNumber(el("fontSize").value, 16);
-        const sliderValue = Math.max(1, Math.min(420, value));
-        el("fontSizeSlider").value = String(sliderValue);
-      }
-
-      function syncFontSizeInputFromSlider() {
-        el("fontSize").value = el("fontSizeSlider").value;
-      }
-
-      function syncSizeRatioFieldFromSlider() {
-        el("sizeRatioField").value = el("sizeRatio").value;
-      }
-
-      function syncSizeRatioSliderFromField() {
-        const value = toNumber(el("sizeRatioField").value, 0);
-        const clamped = Math.max(-30, Math.min(30, value));
-        el("sizeRatio").value = String(clamped);
-      }
-
-      function syncOpticalIntensityFieldFromSlider() {
-        el("opticalIntensityField").value = el("opticalIntensity").value;
-      }
-
-      function syncOpticalIntensitySliderFromField() {
-        const value = toNumber(el("opticalIntensityField").value, 100);
-        const clamped = Math.max(0, Math.min(100, value));
-        el("opticalIntensity").value = String(clamped);
-      }
-
-      function setupToggleVisibility() {
-        const enabled = el("opticalSpacing").checked;
-        el("opticalIntensityWrap").classList.toggle("hidden", !enabled);
       }
 
       function renderPresetSelect() {
@@ -1005,13 +1588,12 @@
             style: state.fontB.style || "Regular"
           },
           fontSize: toNumber(el("fontSize").value, 16),
-          sizeRatio: toNumber(el("sizeRatio").value, 0),
-          letterSpacingLatin: toNumber(el("spacingLatin").value, 0),
-          letterSpacingKanji: toNumber(el("spacingKanji").value, 0),
-          letterSpacingHiragana: toNumber(el("spacingHiragana").value, 0),
-          letterSpacingKatakana: toNumber(el("spacingKatakana").value, 0),
-          opticalSpacing: el("opticalSpacing").checked,
-          opticalIntensity: toNumber(el("opticalIntensity").value, 100)
+          sizeRatio: toNumber(el("sizeRatioField").value, 0),
+          letterSpacingUnit: "em",
+          letterSpacingLatin: roundLetterSpacing(el("spacingLatin").value),
+          letterSpacingKanji: roundLetterSpacing(el("spacingKanji").value),
+          letterSpacingHiragana: roundLetterSpacing(el("spacingHiragana").value),
+          letterSpacingKatakana: roundLetterSpacing(el("spacingKatakana").value)
         };
       }
 
@@ -1020,6 +1602,8 @@
           return;
         }
 
+        settings = normalizeSettingsRecord(settings);
+
         if (settings.fontA != null) {
           fontPickerA.setValue(settings.fontA);
         }
@@ -1027,37 +1611,26 @@
           fontPickerB.setValue(settings.fontB);
         }
         if (settings.fontSize != null) {
-          el("fontSize").value = String(settings.fontSize);
-          syncFontSizeSliderFromInput();
+          fontSizeDropdown.setValue(settings.fontSize);
         }
         if (settings.sizeRatio != null) {
-          el("sizeRatio").value = String(settings.sizeRatio);
+          sizeDifferenceDropdown.setValue(settings.sizeRatio);
         }
         if (settings.letterSpacingLatin != null) {
-          el("spacingLatin").value = String(settings.letterSpacingLatin);
+          el("spacingLatin").value = formatNumber(settings.letterSpacingLatin, 2);
         }
         if (settings.letterSpacingKanji != null) {
-          el("spacingKanji").value = String(settings.letterSpacingKanji);
+          el("spacingKanji").value = formatNumber(settings.letterSpacingKanji, 2);
         }
         if (settings.letterSpacingHiragana != null) {
-          el("spacingHiragana").value = String(settings.letterSpacingHiragana);
+          el("spacingHiragana").value = formatNumber(settings.letterSpacingHiragana, 2);
         }
         if (settings.letterSpacingKatakana != null) {
-          el("spacingKatakana").value = String(settings.letterSpacingKatakana);
+          el("spacingKatakana").value = formatNumber(settings.letterSpacingKatakana, 2);
         }
-        if (settings.opticalSpacing != null) {
-          el("opticalSpacing").checked = Boolean(settings.opticalSpacing);
-        }
-        if (settings.opticalIntensity != null) {
-          el("opticalIntensity").value = String(settings.opticalIntensity);
-        }
-
-        updateRatioLabels();
-        setupToggleVisibility();
-        syncFontSizeSliderFromInput();
       }
 
-      function showInlineEditor(rootId, inputId, initialValue, onConfirm) {
+      function showInlineEditor(rootId, inputId, initialValue, onConfirm, opener) {
         const root = el(rootId);
         const input = el(inputId);
         root.classList.remove("hidden");
@@ -1083,6 +1656,9 @@
           isClosed = true;
           cleanup();
           root.classList.add("hidden");
+          if (opener) {
+            opener.focus();
+          }
         };
 
         const confirm = () => {
@@ -1433,17 +2009,17 @@
           setStatus("This runtime is using session-only presets right now.", "");
         });
 
-        el("savePresetButton").addEventListener("click", () => {
+        el("savePresetButton").addEventListener("click", (event) => {
           showInlineEditor("savePresetInline", "savePresetName", "", async (name) => {
             if (!name) {
               setStatus("Preset name is required.", "error");
               return;
             }
             await savePresetByName(name);
-          });
+          }, event.currentTarget);
         });
 
-        el("renamePresetButton").addEventListener("click", () => {
+        el("renamePresetButton").addEventListener("click", (event) => {
           if (!state.selectedPresetId) {
             setStatus("Select a preset first.", "error");
             return;
@@ -1460,7 +2036,7 @@
               return;
             }
             await renameSelectedPreset(newName);
-          });
+          }, event.currentTarget);
         });
 
         el("overwritePresetButton").addEventListener("click", async () => {
@@ -1489,15 +2065,13 @@
       }
 
       function bindGeneralControls() {
-        el("sizeRatio").addEventListener("input", updateRatioLabels);
-        el("opticalIntensity").addEventListener("input", updateRatioLabels);
-        el("opticalSpacing").addEventListener("change", setupToggleVisibility);
-        el("fontSizeSlider").addEventListener("input", syncFontSizeInputFromSlider);
-        el("fontSize").addEventListener("input", syncFontSizeSliderFromInput);
-        el("sizeRatio").addEventListener("input", syncSizeRatioFieldFromSlider);
-        el("sizeRatioField").addEventListener("input", syncSizeRatioSliderFromField);
-        el("opticalIntensity").addEventListener("input", syncOpticalIntensityFieldFromSlider);
-        el("opticalIntensityField").addEventListener("input", syncOpticalIntensitySliderFromField);
+        ["spacingLatin", "spacingKanji", "spacingHiragana", "spacingKatakana"].forEach((id) => {
+          const input = el(id);
+          input.addEventListener("input", () => limitDecimalInput(input, 2));
+          input.addEventListener("blur", () => normalizeLetterSpacingField(input));
+        });
+        document.querySelectorAll(".spacing-scrubber").forEach(createSpacingScrubber);
+
         el("extractButton").addEventListener("click", () => {
           post({ type: "extract" });
           setStatus("Extracting settings from the selected text node...", "");
@@ -1509,11 +2083,17 @@
             return;
           }
 
-          void saveLocalSettings(collectSettings());
+          ["spacingLatin", "spacingKanji", "spacingHiragana", "spacingKatakana"].forEach((id) => {
+            normalizeLetterSpacingField(el(id));
+          });
+          fontSizeDropdown.close();
+          sizeDifferenceDropdown.close();
+          const settings = collectSettings();
+          void saveLocalSettings(settings);
 
           post({
             type: "apply",
-            settings: collectSettings()
+            settings
           });
           setStatus("Applying...", "");
         });
@@ -1525,13 +2105,37 @@
       const fontPickerB = createFontPicker("fontBSearch", "fontBResults", "fontBStyle", (font) => {
         state.fontB = font;
       });
+      const fontSizeDropdown = createEditableNumberDropdown({
+        inputId: "fontSize",
+        triggerId: "fontSizeTrigger",
+        menuId: "fontSizeMenu",
+        menuLabel: "Font size presets",
+        values: FONT_SIZE_PRESETS,
+        min: 1,
+        max: 420,
+        fallback: 16,
+        decimals: 2
+      });
+      const sizeDifferenceDropdown = createEditableNumberDropdown({
+        inputId: "sizeRatioField",
+        triggerId: "sizeDifferenceTrigger",
+        menuId: "sizeDifferenceMenu",
+        menuLabel: "Size difference presets",
+        values: SIZE_DIFFERENCE_PRESETS,
+        min: -30,
+        max: 30,
+        fallback: 0,
+        decimals: 2
+      });
 
       bindPresetControls();
       bindGeneralControls();
-      updateRatioLabels();
-      setupToggleVisibility();
-      syncFontSizeSliderFromInput();
       updatePresetStorageUi();
+
+      const uiResizeObserver = new ResizeObserver(requestUiResize);
+      uiResizeObserver.observe(el("app"));
+      window.addEventListener("load", requestUiResize, { once: true });
+      requestUiResize();
 
       window.onmessage = async (event) => {
         const message = event.data.pluginMessage;
