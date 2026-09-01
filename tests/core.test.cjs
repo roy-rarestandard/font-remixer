@@ -7,7 +7,8 @@ const {
   buildCharacterTokens,
   classifyCharacter,
   classifyJapaneseSubtype,
-  getPairAdjustment
+  emToFigmaPercent,
+  figmaPercentToEm
 } = require("../dist/core.js");
 
 test("classifyCharacter separates latin and japanese ranges", () => {
@@ -39,36 +40,26 @@ test("buildCharacterRanges keeps spaces with the preceding script and handles su
 test("buildCharacterTokens assigns subtype and per-script spacing", () => {
   const settings = {
     ...DEFAULT_SETTINGS,
-    letterSpacingLatin: 1,
-    letterSpacingHiragana: 2,
-    letterSpacingKatakana: 3,
-    letterSpacingKanji: 4
+    letterSpacingLatin: -0.01,
+    letterSpacingHiragana: -0.02,
+    letterSpacingKatakana: -0.03,
+    letterSpacingKanji: 0.04
   };
 
-  const tokens = buildCharacterTokens("Aあア東", settings, 18);
+  const tokens = buildCharacterTokens("Aあア東", settings);
   assert.equal(tokens.length, 4);
-  assert.equal(tokens[0].spacingBase, 1);
+  assert.equal(tokens[0].spacingBase, -0.01);
   assert.equal(tokens[1].japaneseSubtype, "hiragana");
-  assert.equal(tokens[1].spacingBase, 2);
+  assert.equal(tokens[1].spacingBase, -0.02);
   assert.equal(tokens[2].japaneseSubtype, "katakana");
-  assert.equal(tokens[2].spacingBase, 3);
+  assert.equal(tokens[2].spacingBase, -0.03);
   assert.equal(tokens[3].japaneseSubtype, "kanji");
-  assert.equal(tokens[3].spacingBase, 4);
+  assert.equal(tokens[3].spacingBase, 0.04);
 });
 
-test("optical spacing tightens latin AV pairs and cross-script transitions expand", () => {
-  const latinTokens = buildCharacterTokens("AV", DEFAULT_SETTINGS, 16);
-  assert.ok(getPairAdjustment(latinTokens[0], latinTokens[1], 100) < 0);
-
-  const mixedTokens = buildCharacterTokens("Aア", DEFAULT_SETTINGS, 16);
-  assert.ok(getPairAdjustment(mixedTokens[0], mixedTokens[1], 100) > 0);
-  assert.equal(getPairAdjustment(mixedTokens[0], mixedTokens[1], 100), 10);
-});
-
-test("katakana optical spacing tightens small kana pairs and loosens voiced kana pairs", () => {
-  const smallKanaTokens = buildCharacterTokens("フィ", DEFAULT_SETTINGS, 16);
-  assert.ok(getPairAdjustment(smallKanaTokens[0], smallKanaTokens[1], 100) < 0);
-
-  const voicedKanaTokens = buildCharacterTokens("グラ", DEFAULT_SETTINGS, 16);
-  assert.ok(getPairAdjustment(voicedKanaTokens[0], voicedKanaTokens[1], 100) > 0);
+test("em spacing converts losslessly to and from Figma percent values", () => {
+  assert.equal(DEFAULT_SETTINGS.letterSpacingUnit, "em");
+  assert.equal(emToFigmaPercent(-0.05), -5);
+  assert.equal(figmaPercentToEm(2.8), 0.028);
+  assert.equal(figmaPercentToEm(emToFigmaPercent(-0.0125)), -0.0125);
 });
