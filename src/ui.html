@@ -386,7 +386,7 @@
 
       .preset-picker-row {
         display: grid;
-        grid-template-columns: 1fr 32px 32px;
+        grid-template-columns: minmax(0, 1fr) 32px 32px 32px;
         gap: 6px;
         align-items: center;
       }
@@ -559,6 +559,11 @@
                 <circle cx="12" cy="12" r="2.25"></circle>
               </svg>
             </button>
+            <button id="exportPresetsButton" type="button" class="icon-button" title="Export presets as JSON" aria-label="Export custom presets as JSON">
+              <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+                <path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,124.69V32a8,8,0,0,0-16,0v92.69L93.66,98.34a8,8,0,0,0-11.32,11.32Z"></path>
+              </svg>
+            </button>
           </div>
           <div id="presetFolderStatus" class="hint">Checking preset storage...</div>
           <div id="savePresetInline" class="inline hidden">
@@ -590,11 +595,8 @@
           <div class="section-heading-row">
             <div class="section-heading">Font selection</div>
             <button id="extractButton" type="button" class="icon-button" title="Extract from selected text" aria-label="Extract settings from selected text">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M14 4l6 6"></path>
-                <path d="M7 21l-4-4 10.5-10.5 4 4z"></path>
-                <path d="M12 6l6 6"></path>
-                <path d="M5 19l3-3"></path>
+              <svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+                <path d="M224,67.3a35.79,35.79,0,0,0-11.26-25.66c-14-13.28-36.72-12.78-50.62,1.13L142.8,62.2a24,24,0,0,0-33.14.77l-9,9a16,16,0,0,0,0,22.64l2,2.06-51,51a39.75,39.75,0,0,0-10.53,38l-8,18.41A13.68,13.68,0,0,0,36,219.3a15.92,15.92,0,0,0,17.71,3.35L71.23,215a39.89,39.89,0,0,0,37.06-10.75l51-51,2.06,2.06a16,16,0,0,0,22.62,0l9-9a24,24,0,0,0,.74-33.18l19.75-19.87A35.75,35.75,0,0,0,224,67.3ZM97,193a24,24,0,0,1-24,6,8,8,0,0,0-5.55.31l-18.1,7.91L57,189.41a8,8,0,0,0,.25-5.75A23.88,23.88,0,0,1,63,159l51-51,33.94,34ZM202.13,82l-25.37,25.52a8,8,0,0,0,0,11.3l4.89,4.89a8,8,0,0,1,0,11.32l-9,9L112,83.26l9-9a8,8,0,0,1,11.31,0l4.89,4.89a8,8,0,0,0,11.33,0l24.94-25.09c7.81-7.82,20.5-8.18,28.29-.81a20,20,0,0,1,.39,28.7Z"></path>
               </svg>
             </button>
           </div>
@@ -1344,6 +1346,35 @@
         return state.presets.filter((preset) => !preset.builtIn);
       }
 
+      function exportPresetsAsJson() {
+        const presets = getPersistablePresets();
+        if (!presets.length) {
+          setStatus("No custom presets to export.", "error");
+          return;
+        }
+
+        const payload = {
+          format: "fontremixer-presets",
+          version: 1,
+          exportedAt: new Date().toISOString(),
+          presets
+        };
+        const date = payload.exportedAt.slice(0, 10);
+        const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `fontremixer-presets-${date}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        setStatus(
+          `Exported ${presets.length} custom preset${presets.length === 1 ? "" : "s"} as JSON.`,
+          "success"
+        );
+      }
+
       function isBuiltInPresetSelected() {
         const preset = getPresetById(state.selectedPresetId);
         return Boolean(preset && preset.builtIn);
@@ -2008,6 +2039,8 @@
           }
           setStatus("This runtime is using session-only presets right now.", "");
         });
+
+        el("exportPresetsButton").addEventListener("click", exportPresetsAsJson);
 
         el("savePresetButton").addEventListener("click", (event) => {
           showInlineEditor("savePresetInline", "savePresetName", "", async (name) => {
